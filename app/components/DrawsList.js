@@ -57,19 +57,18 @@ const StatusChip = styled(Chip)(({ isvalid, theme }) => ({
 }));
 
 const DrawList = ({ draws }) => {
-    const validateNumbers = (numbers) => {
-        const [first, second, third] = numbers.map(Number);
-
-        const firstValid = first >= 0 && first <= 3;
-        const secondValid = second >= 2 && second <= 7 && second > first && second < third;
-        const thirdValid = third >= 6 && third <= 9 && third > second;
-
-        return {
-            firstValid,
-            secondValid,
-            thirdValid,
-            isValid: firstValid && secondValid && thirdValid
-        };
+    const validateNumber = (number, position) => {
+        const num = Number(number);
+        switch (position) {
+            case 0: // first number
+                return num >= 0 && num <= 3;
+            case 1: // second number
+                return num >= 2 && num <= 7;
+            case 2: // third number
+                return num >= 6;
+            default:
+                return false;
+        }
     };
 
     return (
@@ -80,7 +79,6 @@ const DrawList = ({ draws }) => {
                     item.sortedSecondNumber.toString(),
                     item.sortedThirdNumber.toString()
                 ];
-                const validation = validateNumbers(numbers);
 
                 return (
                     <Grid item xs={12} sm={6} md={4} key={index}>
@@ -90,18 +88,12 @@ const DrawList = ({ draws }) => {
                                     {numbers.map((num, idx) => (
                                         <NumberBox
                                             key={idx}
-                                            isvalid={
-                                                (idx === 0 && validation.firstValid) ||
-                                                (idx === 1 && validation.secondValid) ||
-                                                (idx === 2 && validation.thirdValid)
-                                            }
+                                            isvalid={validateNumber(num, idx)}
                                         >
                                             <Typography variant="h4" color="white">
                                                 {num}
                                             </Typography>
-                                            {(idx === 0 && validation.firstValid) ||
-                                            (idx === 1 && validation.secondValid) ||
-                                            (idx === 2 && validation.thirdValid) ? (
+                                            {validateNumber(num, idx) ? (
                                                 <CheckCircleOutline
                                                     sx={{ color: 'success.light', mt: 0.5 }}
                                                 />
@@ -122,8 +114,8 @@ const DrawList = ({ draws }) => {
                                     gap: 1
                                 }}>
                                     <StatusChip
-                                        label={validation.isValid ? 'Valid Pattern' : 'Invalid Pattern'}
-                                        isvalid={validation.isValid}
+                                        label={item.isValid ? 'PASSED' : 'FAILED'}
+                                        isvalid={item.isValid}
                                     />
 
                                     <Box sx={{

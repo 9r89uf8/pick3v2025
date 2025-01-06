@@ -22,6 +22,7 @@ import { useStore } from '@/app/store/store';
 import { playNums } from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
+import {setDisplayInfo, getDisplayInfo} from "@/app/services/displayService";
 
 const Item = styled(Paper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -67,6 +68,7 @@ const ExpandButton = styled(IconButton)(({ theme }) => ({
 const HomePage = () => {
   const posts = useStore((state) => state.posts);
   const numbers = useStore((state) => state.numbers);
+  const display = useStore((state) => state.display);
   const [loading, setLoading] = useState(false);
   const clearNumbers = useStore((state) => state.clearNumbers);
   const [showDashboard, setShowDashboard] = useState(false);
@@ -81,6 +83,8 @@ const HomePage = () => {
   useEffect(() => {
     const getPosts = async () => {
       await fetchPosts();
+      await getDisplayInfo()
+
     };
     getPosts();
   }, []);
@@ -99,6 +103,10 @@ const HomePage = () => {
     await playNums({ excludedNumbers });
     // await checkDraws();
     setLoading(false);
+  };
+
+  const handleDisplay = async () => {
+    await setDisplayInfo()
   };
 
   const handleClear = () => {
@@ -175,6 +183,28 @@ const HomePage = () => {
                   </List>
                 </Box>
             )}
+
+
+            {/*add content here*/}
+            {display && (
+                <Box sx={{ mt: 4, textAlign: 'center' }}>
+                  {/* Month */}
+                  <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
+                    {display.month}
+                  </Typography>
+
+                  {/* Passed / Total */}
+                  <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
+                    {display.totalPassed} / {display.totalDraws}
+                  </Typography>
+
+                  {/* Percentage */}
+                  <Typography variant="h5" sx={{ color: '#ffffff' }}>
+                    {display.percentage ? display.percentage.toFixed(0) : '0'}%
+                  </Typography>
+                </Box>
+            )}
+
           </Item>
 
 
@@ -194,14 +224,14 @@ const HomePage = () => {
               <Button
                   variant="contained"
                   size="large"
-                  onClick={() => setShowDashboard(!showDashboard)}
+                  onClick={handleDisplay}
                   sx={{
                     mt: 2,
                     background: 'linear-gradient(to right, #6c757d, #495057)',
                     color: 'black',
                   }}
               >
-                {showDashboard ? 'Hide Dashboard' : 'Show Dashboard'}
+                get
               </Button>
             </Item>
           </Collapse>
