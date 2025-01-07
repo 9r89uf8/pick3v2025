@@ -187,23 +187,47 @@ const HomePage = () => {
 
             {/*add content here*/}
             {display && (
-                <Box sx={{ mt: 4, textAlign: 'center' }}>
-                  {/* Month */}
-                  <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
-                    {display.month}
-                  </Typography>
+                <Box sx={{ mt: 4 }}>
+                  <Stack direction="row" spacing={4} justifyContent="center">
 
-                  {/* Passed / Total */}
-                  <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
-                    {display.totalPassed} / {display.totalDraws}
-                  </Typography>
+                    {/* =========== Current Month =========== */}
+                    <Box textAlign="center">
+                      <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
+                        {display.currentMonth?.month}
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
+                        {display.currentMonth?.totalPassed} / {display.currentMonth?.totalDraws}
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: '#ffffff' }}>
+                        {display.currentMonth?.percentage
+                            ? display.currentMonth.percentage.toFixed(0)
+                            : '0'}
+                        %
+                      </Typography>
+                    </Box>
 
-                  {/* Percentage */}
-                  <Typography variant="h5" sx={{ color: '#ffffff' }}>
-                    {display.percentage ? display.percentage.toFixed(0) : '0'}%
-                  </Typography>
+                    {/* =========== Previous Month =========== */}
+                    {display.previousMonth && (
+                        <Box textAlign="center">
+                          <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
+                            {display.previousMonth.month}
+                          </Typography>
+                          <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
+                            {display.previousMonth.totalPassed} / {display.previousMonth.totalDraws}
+                          </Typography>
+                          <Typography variant="h5" sx={{ color: '#ffffff' }}>
+                            {display.previousMonth.percentage
+                                ? display.previousMonth.percentage.toFixed(0)
+                                : '0'}
+                            %
+                          </Typography>
+                        </Box>
+                    )}
+
+                  </Stack>
                 </Box>
             )}
+
 
           </Item>
 

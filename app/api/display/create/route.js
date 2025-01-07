@@ -104,7 +104,6 @@ export async function GET() {
 
         let totalCorrectPredictions = 0;
         let totalDraws = draws.length;
-        console.log(draws.length);
 
         // Update each draw document with isValid flag
         for (let i = 0; i < draws.length; i++) {
@@ -156,12 +155,46 @@ export async function GET() {
         // Commit all updates
         await batch.commit();
 
-        return new Response(JSON.stringify({
-            month: currentMonth,
-            totalDraws,
-            totalPassed: totalCorrectPredictions,
-            percentage: (totalCorrectPredictions / totalDraws) * 100
-        }), {
+// =============================================
+        // Now read back the CURRENT and PREVIOUS month stats from drawStats.
+        // =============================================
+        const statsCollection = adminDb.firestore().collection('drawStats');
+
+        // 1. Current month
+        const currentDoc = await statsCollection.doc(currentMonth).get();
+        let currentData = null;
+        if (currentDoc.exists) {
+            currentData = currentDoc.data();
+        }
+
+        // 2. Previous month
+        const prevDoc = await statsCollection.doc(prevMonth).get();
+        let prevData = null;
+        if (prevDoc.exists) {
+            prevData = prevDoc.data();
+        }
+
+        // Build final response in desired shape
+        const responsePayload = {
+            currentMonth: currentData
+                ? {
+                    month: currentData.month,
+                    totalDraws: currentData.totalDraws,
+                    totalPassed: currentData.totalPassed,
+                    percentage: currentData.percentage,
+                }
+                : null,
+            previousMonth: prevData
+                ? {
+                    month: prevData.month,
+                    totalDraws: prevData.totalDraws,
+                    totalPassed: prevData.totalPassed,
+                    percentage: prevData.percentage,
+                }
+                : null,
+        };
+
+        return new Response(JSON.stringify(responsePayload), {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',

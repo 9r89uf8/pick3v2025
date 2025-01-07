@@ -79,7 +79,14 @@ function tooSimilarToPrevious(combination, latestDraw) {
     return found;
 }
 
-function generateDraws(numberOfDraws = 5, latestDraw) {
+function isExcluded(num, position, excludedNumbers) {
+    if (position === 0) return excludedNumbers.first.includes(num);
+    if (position === 1) return excludedNumbers.second.includes(num);
+    if (position === 2) return excludedNumbers.third.includes(num);
+    return false;
+}
+
+function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
     const usedFirstNumbers = new Set();
     const usedSecondNumbers = new Set();
     const usedThirdNumbers = new Set();
@@ -87,6 +94,11 @@ function generateDraws(numberOfDraws = 5, latestDraw) {
 
     function isValidDraw(draw) {
         const [first, second, third] = draw;
+
+        // Check excluded numbers
+        for (let i = 0; i < 3; i++) {
+            if (isExcluded(draw[i], i, excludedNumbers)) return false;
+        }
 
         // Check for repeating numbers in the draw
         if (new Set(draw).size !== 3) return false;
@@ -151,63 +163,12 @@ function generateDraws(numberOfDraws = 5, latestDraw) {
 }
 
 
-
-
-// Validate all rules for the generated draws
-function validateDraws(draws) {
-    const validations = {
-        rangeCheck: true,
-        orderCheck: true,
-        uniqueCheck: true,
-        positionCheck: true,
-        specialRules: true
-    };
-
-    const firstNums = new Set();
-    const secondNums = new Set();
-    const thirdNums = new Set();
-
-    for (const draw of draws) {
-        const [first, second, third] = draw;
-
-        // Range checks
-        if (first < 0 || first > 3) validations.rangeCheck = false;
-        if (second < 2 || second > 7) validations.rangeCheck = false;
-        if (third < 6 || third > 9) validations.rangeCheck = false;
-
-        // Order check
-        if (!(first < second && second < third)) validations.orderCheck = false;
-
-        // Unique numbers in draw
-        if (new Set(draw).size !== 3) validations.uniqueCheck = false;
-
-        // Position uniqueness
-        if (firstNums.has(first) || secondNums.has(second) || thirdNums.has(third)) {
-            validations.positionCheck = false;
-        }
-        firstNums.add(first);
-        secondNums.add(second);
-        thirdNums.add(third);
-
-        // Special rules
-        if ((first === 2 || first === 3) && (second === 2 || second === 3)) {
-            validations.specialRules = false;
-        }
-        if ((second === 6 || second === 7) && (third === 6 || third === 7)) {
-            validations.specialRules = false;
-        }
-    }
-
-    return validations;
-}
-
-
-
 // Modified POST handler
 export async function POST(req) {
     try {
         const [prevMonth, currentMonth] = getMonths();
         const firestore = adminDb.firestore();
+        const { excludedNumbers = { first: [], second: [], third: [] } } = await req.json();
 
         // Query for current and previous month
         const drawsCollection = firestore
@@ -243,7 +204,7 @@ export async function POST(req) {
 
         const draws = allDraws.slice(0, 4);
 // Test the function
-        const drawsS = generateDraws(3, draws[0]);
+        const drawsS = generateDraws(3, draws[0], excludedNumbers);
 
         return new Response(JSON.stringify(drawsS), {
             status: 200,

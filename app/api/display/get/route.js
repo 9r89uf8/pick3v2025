@@ -11,25 +11,47 @@ export async function GET() {
 
         // Get the current month's short name (e.g., "Jan", "Feb", "Mar", etc.)
         const currentDate = new Date();
-        const currentMonthIndex = currentDate.getMonth(); // 0-11
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        // Current month (0-based index)
+        const currentMonthIndex = currentDate.getMonth();
         const currentMonth = monthNames[currentMonthIndex];
 
-        // Fetch the document corresponding to the current month in drawStats
-        const docRef = firestore.collection('drawStats').doc(currentMonth);
-        const docSnap = await docRef.get();
+        // Previous month, with wrap-around if currentMonth is "Jan"
+        const prevMonthIndex = (currentMonthIndex + 12 - 1) % 12;
+        const previousMonth = monthNames[prevMonthIndex];
 
-        // If the document exists, return its data. Otherwise, return an error message.
-        if (!docSnap.exists) {
-            return new Response(JSON.stringify({ error: `No stats found for ${currentMonth}.` }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' },
-            });
+        // Fetch current month stats
+        const currentMonthRef = firestore.collection('drawStats').doc(currentMonth);
+        const currentSnap = await currentMonthRef.get();
+
+        // Fetch previous month stats
+        const previousMonthRef = firestore.collection('drawStats').doc(previousMonth);
+        const previousSnap = await previousMonthRef.get();
+
+        // If current month doc doesn't exist, throw an error or handle accordingly
+        if (!currentSnap.exists) {
+            return new Response(
+                JSON.stringify({ error: `No stats found for ${currentMonth}.` }),
+                {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
         }
 
-        const stats = docSnap.data();
+        // Build the response object
+        const responseData = {
+            currentMonth: {
+                month: currentMonth,
+                ...currentSnap.data(),
+            },
+            previousMonth: previousSnap.exists
+                ? { month: previousMonth, ...previousSnap.data() }
+                : null,
+        };
 
-        return new Response(JSON.stringify(stats), {
+        return new Response(JSON.stringify(responseData), {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
@@ -44,3 +66,4 @@ export async function GET() {
         });
     }
 }
+
