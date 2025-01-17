@@ -248,6 +248,7 @@ export async function GET(req) {
                     }
                 }
             }
+
         };
 
         await checkResults();
