@@ -1,4 +1,5 @@
 // app/api/posts/route.js
+//120 possible combinations
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/utils/firebaseAdmin';
 

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const BROWSER_WS = process.env.PROXY;
+
 const getMonths = () => {
     const currentDate = new Date();
     const currentMonthIndex = currentDate.getMonth();
@@ -27,246 +28,246 @@ const getMonths = () => {
     return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
 };
 
+async function scrapePageData(pageNum) {
+    console.log(`Processing page ${pageNum}...`);
+    const browser = await puppeteer.connect({
+        browserWSEndpoint: BROWSER_WS,
+    });
+
+    try {
+        const page = await browser.newPage();
+        await page.goto(`https://www.illinoislottery.com/dbg/results/pick3?page=${pageNum}`, {
+            waitUntil: 'networkidle0'
+        });
+
+        await page.waitForSelector('.results__list-item');
+
+        const divsWithClassDfs = await page.evaluate(() => Array.from(document.querySelectorAll('.results__list-item')).map(elem => {
+            try {
+                return {
+                    dateInfo: elem.querySelector('.dbg-results__date-info')?.textContent || null,
+                    drawInfo: elem.querySelector('.dbg-results__draw-info')?.textContent || null,
+                    fireball: elem.querySelector('.grid-ball--pick3-secondary--selected')?.textContent.trim() || null,
+                    pick: Array.from(elem.querySelectorAll(".grid-ball--pick3-primary")).map(e => {
+                        const num = parseInt(e.textContent.replace(/[^0-9]/g, ""));
+                        return isNaN(num) ? null : num;
+                    }),
+                };
+            } catch (error) {
+                return {
+                    dateInfo: null,
+                    drawInfo: null,
+                    fireball: null,
+                    pick: [null, null, null]
+                };
+            }
+        }));
+
+        return divsWithClassDfs.reverse();
+    } finally {
+        await browser.close();
+    }
+}
+
+async function processPage(pageNum, currentMonth, previousPicks) {
+    const pageData = await scrapePageData(pageNum);
+    let draws = [];
+
+    for (let i = 0; i < pageData.length; i++) {
+        const { dateInfo, drawInfo, pick, fireball } = pageData[i];
+        if (dateInfo?.substring(0, 3) === currentMonth) {
+            // Original order numbers
+            let [originalFirst = null, originalSecond = null, originalThird = null] = pick;
+
+            let r = parseInt(dateInfo?.match(/\d+/)?.[0] || '0')
+            let y = drawInfo?.replace(/[^a-zA-Z]+/g, "") || '';
+            if(y === 'midday') {
+                r = r * 2
+            } else {
+                r = (r * 2) + 1
+            }
+
+            // Create sorted version
+            let sortedNumbers = [...pick];
+            if (originalFirst !== null && originalSecond !== null && originalThird !== null) {
+                sortedNumbers.sort((a, b) => a - b);
+            }
+            let [sortedFirst, sortedSecond, sortedThird] = sortedNumbers;
+
+            const parsedFireball = fireball ? parseInt(fireball) : null;
+
+            // Calculate sums
+            const sortedDrawSum = (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
+                ? sortedFirst + sortedSecond + sortedThird
+                : null;
+
+            const originalDrawSum = (originalFirst !== null && originalSecond !== null && originalThird !== null)
+                ? originalFirst + originalSecond + originalThird
+                : null;
+
+            // Create draw data object
+            const drawData = {
+                // Original order data
+                originalFirstNumber: originalFirst,
+                originalSecondNumber: originalSecond,
+                originalThirdNumber: originalThird,
+                originalDraw: (originalFirst !== null && originalSecond !== null && originalThird !== null)
+                    ? `${originalFirst}${originalSecond}${originalThird}`
+                    : null,
+                originalDrawSum,
+                originalFirstAndSecond: (originalFirst !== null && originalSecond !== null)
+                    ? `${originalFirst}${originalSecond}`
+                    : null,
+                originalSecondAndThird: (originalSecond !== null && originalThird !== null)
+                    ? `${originalSecond}${originalThird}`
+                    : null,
+                originalFirstAndThird: (originalFirst !== null && originalThird !== null)
+                    ? `${originalFirst}${originalThird}`
+                    : null,
+
+                // Previous numbers (original order)
+                originalPreviousFirst1: previousPicks.original[0]?.[0] ?? null,
+                originalPreviousFirst2: previousPicks.original[1]?.[0] ?? null,
+                originalPreviousFirst3: previousPicks.original[2]?.[0] ?? null,
+                originalPreviousFirst4: previousPicks.original[3]?.[0] ?? null,
+                originalPreviousFirst5: previousPicks.original[4]?.[0] ?? null,
+                originalPreviousFirst6: previousPicks.original[5]?.[0] ?? null,
+                originalPreviousFirst7: previousPicks.original[6]?.[0] ?? null,
+                originalPreviousFirst8: previousPicks.original[7]?.[0] ?? null,
+
+                originalPreviousSecond1: previousPicks.original[0]?.[1] ?? null,
+                originalPreviousSecond2: previousPicks.original[1]?.[1] ?? null,
+                originalPreviousSecond3: previousPicks.original[2]?.[1] ?? null,
+                originalPreviousSecond4: previousPicks.original[3]?.[1] ?? null,
+                originalPreviousSecond5: previousPicks.original[4]?.[1] ?? null,
+                originalPreviousSecond6: previousPicks.original[5]?.[1] ?? null,
+                originalPreviousSecond7: previousPicks.original[6]?.[1] ?? null,
+                originalPreviousSecond8: previousPicks.original[7]?.[1] ?? null,
+
+                originalPreviousThird1: previousPicks.original[0]?.[2] ?? null,
+                originalPreviousThird2: previousPicks.original[1]?.[2] ?? null,
+                originalPreviousThird3: previousPicks.original[2]?.[2] ?? null,
+                originalPreviousThird4: previousPicks.original[3]?.[2] ?? null,
+                originalPreviousThird5: previousPicks.original[4]?.[2] ?? null,
+                originalPreviousThird6: previousPicks.original[5]?.[2] ?? null,
+                originalPreviousThird7: previousPicks.original[6]?.[2] ?? null,
+                originalPreviousThird8: previousPicks.original[7]?.[2] ?? null,
+
+                // Sorted data
+                sortedFirstNumber: sortedFirst,
+                sortedSecondNumber: sortedSecond,
+                sortedThirdNumber: sortedThird,
+                sortedDraw: (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
+                    ? `${sortedFirst}${sortedSecond}${sortedThird}`
+                    : null,
+                sortedDrawSum,
+                sortedFirstAndSecond: (sortedFirst !== null && sortedSecond !== null)
+                    ? `${sortedFirst}${sortedSecond}`
+                    : null,
+                sortedSecondAndThird: (sortedSecond !== null && sortedThird !== null)
+                    ? `${sortedSecond}${sortedThird}`
+                    : null,
+                sortedFirstAndThird: (sortedFirst !== null && sortedThird !== null)
+                    ? `${sortedFirst}${sortedThird}`
+                    : null,
+
+                // Previous numbers (sorted)
+                sortedPreviousFirst1: previousPicks.sorted[0]?.[0] ?? null,
+                sortedPreviousFirst2: previousPicks.sorted[1]?.[0] ?? null,
+                sortedPreviousFirst3: previousPicks.sorted[2]?.[0] ?? null,
+                sortedPreviousFirst4: previousPicks.sorted[3]?.[0] ?? null,
+                sortedPreviousFirst5: previousPicks.sorted[4]?.[0] ?? null,
+                sortedPreviousFirst6: previousPicks.sorted[5]?.[0] ?? null,
+                sortedPreviousFirst7: previousPicks.sorted[6]?.[0] ?? null,
+                sortedPreviousFirst8: previousPicks.sorted[7]?.[0] ?? null,
+
+                sortedPreviousSecond1: previousPicks.sorted[0]?.[1] ?? null,
+                sortedPreviousSecond2: previousPicks.sorted[1]?.[1] ?? null,
+                sortedPreviousSecond3: previousPicks.sorted[2]?.[1] ?? null,
+                sortedPreviousSecond4: previousPicks.sorted[3]?.[1] ?? null,
+                sortedPreviousSecond5: previousPicks.sorted[4]?.[1] ?? null,
+                sortedPreviousSecond6: previousPicks.sorted[5]?.[1] ?? null,
+                sortedPreviousSecond7: previousPicks.sorted[6]?.[1] ?? null,
+                sortedPreviousSecond8: previousPicks.sorted[7]?.[1] ?? null,
+
+                sortedPreviousThird1: previousPicks.sorted[0]?.[2] ?? null,
+                sortedPreviousThird2: previousPicks.sorted[1]?.[2] ?? null,
+                sortedPreviousThird3: previousPicks.sorted[2]?.[2] ?? null,
+                sortedPreviousThird4: previousPicks.sorted[3]?.[2] ?? null,
+                sortedPreviousThird5: previousPicks.sorted[4]?.[2] ?? null,
+                sortedPreviousThird6: previousPicks.sorted[5]?.[2] ?? null,
+                sortedPreviousThird7: previousPicks.sorted[6]?.[2] ?? null,
+                sortedPreviousThird8: previousPicks.sorted[7]?.[2] ?? null,
+
+                // Common fields
+                fireball: parsedFireball,
+                drawDate: dateInfo || null,
+                drawMonth: dateInfo ? dateInfo.substring(0, 3) : null,
+                index: r,
+                time: drawInfo ? drawInfo.replace(/[^a-zA-Z]+/g, "") : null,
+                timestamp: adminDb.firestore.Timestamp.now(),
+            };
+
+            draws.push(drawData);
+
+            // Update previous picks
+            previousPicks.sorted.unshift([sortedFirst, sortedSecond, sortedThird]);
+            previousPicks.original.unshift([originalFirst, originalSecond, originalThird]);
+
+            // Keep only last 8 picks
+            previousPicks.sorted = previousPicks.sorted.slice(0, 8);
+            previousPicks.original = previousPicks.original.slice(0, 8);
+        }
+    }
+
+    return { draws, previousPicks };
+}
+
+async function writeBatchToFirestore(draws) {
+    if (draws.length === 0) return;
+
+    const infoCollection = adminDb.firestore().collection('draws');
+    const batch = adminDb.firestore().batch();
+
+    draws.forEach(draw => {
+        const docRef = infoCollection.doc();
+        batch.set(docRef, draw);
+    });
+
+    await batch.commit();
+    console.log(`Batch write succeeded for ${draws.length} draws`);
+}
+
 export async function GET(req) {
     try {
         const [prevMonth, currentMonth] = getMonths();
-        console.log('creating')
-        let draws = [];
+        console.log('Starting sequential scraping');
 
-        // Initialize previous pick arrays for both sorted and original order
-        let previousSortedPick1 = [null, null, null];
-        let previousSortedPick2 = [null, null, null];
-        let previousSortedPick3 = [null, null, null];
-        let previousSortedPick4 = [null, null, null];
-        let previousSortedPick5 = [null, null, null];
-        let previousSortedPick6 = [null, null, null];
-        let previousSortedPick7 = [null, null, null];
-        let previousSortedPick8 = [null, null, null];
-
-        let previousOriginalPick1 = [null, null, null];
-        let previousOriginalPick2 = [null, null, null];
-        let previousOriginalPick3 = [null, null, null];
-        let previousOriginalPick4 = [null, null, null];
-        let previousOriginalPick5 = [null, null, null];
-        let previousOriginalPick6 = [null, null, null];
-        let previousOriginalPick7 = [null, null, null];
-        let previousOriginalPick8 = [null, null, null];
-
-        console.log('Connecting to Scraping Browser...');
-        const browser = await puppeteer.connect({
-            browserWSEndpoint: BROWSER_WS,
-        });
-        const page = await browser.newPage();
-
-        const checkResults = async () => {
-            for (let pageNum = 9; pageNum >= 1; pageNum--) {
-                await page.goto(`https://www.illinoislottery.com/dbg/results/pick3?page=${pageNum}`, {
-                    waitUntil: 'networkidle0'
-                });
-
-                console.log('page found')
-
-                await page.waitForSelector('.results__list-item');
-
-                const divsWithClassDfs = await page.evaluate(() => Array.from(document.querySelectorAll('.results__list-item')).map(elem => {
-                    try {
-                        return {
-                            dateInfo: elem.querySelector('.dbg-results__date-info')?.textContent || null,
-                            drawInfo: elem.querySelector('.dbg-results__draw-info')?.textContent || null,
-                            fireball: elem.querySelector('.grid-ball--pick3-secondary--selected')?.textContent.trim() || null,
-                            pick: Array.from(elem.querySelectorAll(".grid-ball--pick3-primary")).map(e => {
-                                const num = parseInt(e.textContent.replace(/[^0-9]/g, ""));
-                                return isNaN(num) ? null : num;
-                            }),
-                        };
-                    } catch (error) {
-                        return {
-                            dateInfo: null,
-                            drawInfo: null,
-                            fireball: null,
-                            pick: [null, null, null]
-                        };
-                    }
-                }));
-
-                divsWithClassDfs.reverse();
-
-                for (let i = 0; i < divsWithClassDfs.length; i++) {
-                    const { dateInfo, drawInfo, pick, fireball } = divsWithClassDfs[i];
-                    if (dateInfo?.substring(0, 3) === currentMonth) {
-                        // Original order numbers
-                        let [originalFirst = null, originalSecond = null, originalThird = null] = pick;
-
-                        let r = parseInt(dateInfo?.match(/\d+/)?.[0] || '0')
-                        let y = drawInfo?.replace(/[^a-zA-Z]+/g, "") || '';
-                        if(y === 'midday'){
-                            r = r * 2
-                        } else {
-                            r = (r * 2) + 1
-                        }
-
-                        // Create sorted version
-                        let sortedNumbers = [...pick];
-                        if (originalFirst !== null && originalSecond !== null && originalThird !== null) {
-                            sortedNumbers.sort((a, b) => a - b);
-                        }
-                        let [sortedFirst, sortedSecond, sortedThird] = sortedNumbers;
-
-                        const parsedFireball = fireball ? parseInt(fireball) : null;
-
-                        // Calculate sums
-                        const sortedDrawSum = (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
-                            ? sortedFirst + sortedSecond + sortedThird
-                            : null;
-
-                        const originalDrawSum = (originalFirst !== null && originalSecond !== null && originalThird !== null)
-                            ? originalFirst + originalSecond + originalThird
-                            : null;
-
-                        // Create combined data object
-                        draws.push({
-                            // Original order data
-                            originalFirstNumber: originalFirst,
-                            originalSecondNumber: originalSecond,
-                            originalThirdNumber: originalThird,
-                            originalDraw: (originalFirst !== null && originalSecond !== null && originalThird !== null)
-                                ? `${originalFirst}${originalSecond}${originalThird}`
-                                : null,
-                            originalDrawSum,
-                            originalFirstAndSecond: (originalFirst !== null && originalSecond !== null)
-                                ? `${originalFirst}${originalSecond}`
-                                : null,
-                            originalSecondAndThird: (originalSecond !== null && originalThird !== null)
-                                ? `${originalSecond}${originalThird}`
-                                : null,
-                            originalFirstAndThird: (originalFirst !== null && originalThird !== null)
-                                ? `${originalFirst}${originalThird}`
-                                : null,
-
-                            // Previous numbers (original order)
-                            originalPreviousFirst1: previousOriginalPick1[0],
-                            originalPreviousFirst2: previousOriginalPick2[0],
-                            originalPreviousFirst3: previousOriginalPick3[0],
-                            originalPreviousFirst4: previousOriginalPick4[0],
-                            originalPreviousFirst5: previousOriginalPick5[0],
-                            originalPreviousFirst6: previousOriginalPick6[0],
-                            originalPreviousFirst7: previousOriginalPick7[0],
-                            originalPreviousFirst8: previousOriginalPick8[0],
-
-                            originalPreviousSecond1: previousOriginalPick1[1],
-                            originalPreviousSecond2: previousOriginalPick2[1],
-                            originalPreviousSecond3: previousOriginalPick3[1],
-                            originalPreviousSecond4: previousOriginalPick4[1],
-                            originalPreviousSecond5: previousOriginalPick5[1],
-                            originalPreviousSecond6: previousOriginalPick6[1],
-                            originalPreviousSecond7: previousOriginalPick7[1],
-                            originalPreviousSecond8: previousOriginalPick8[1],
-
-                            originalPreviousThird1: previousOriginalPick1[2],
-                            originalPreviousThird2: previousOriginalPick2[2],
-                            originalPreviousThird3: previousOriginalPick3[2],
-                            originalPreviousThird4: previousOriginalPick4[2],
-                            originalPreviousThird5: previousOriginalPick5[2],
-                            originalPreviousThird6: previousOriginalPick6[2],
-                            originalPreviousThird7: previousOriginalPick7[2],
-                            originalPreviousThird8: previousOriginalPick8[2],
-
-                            // Sorted data
-                            sortedFirstNumber: sortedFirst,
-                            sortedSecondNumber: sortedSecond,
-                            sortedThirdNumber: sortedThird,
-                            sortedDraw: (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
-                                ? `${sortedFirst}${sortedSecond}${sortedThird}`
-                                : null,
-                            sortedDrawSum,
-                            sortedFirstAndSecond: (sortedFirst !== null && sortedSecond !== null)
-                                ? `${sortedFirst}${sortedSecond}`
-                                : null,
-                            sortedSecondAndThird: (sortedSecond !== null && sortedThird !== null)
-                                ? `${sortedSecond}${sortedThird}`
-                                : null,
-                            sortedFirstAndThird: (sortedFirst !== null && sortedThird !== null)
-                                ? `${sortedFirst}${sortedThird}`
-                                : null,
-
-                            // Previous numbers (sorted)
-                            sortedPreviousFirst1: previousSortedPick1[0],
-                            sortedPreviousFirst2: previousSortedPick2[0],
-                            sortedPreviousFirst3: previousSortedPick3[0],
-                            sortedPreviousFirst4: previousSortedPick4[0],
-                            sortedPreviousFirst5: previousSortedPick5[0],
-                            sortedPreviousFirst6: previousSortedPick6[0],
-                            sortedPreviousFirst7: previousSortedPick7[0],
-                            sortedPreviousFirst8: previousSortedPick8[0],
-
-                            sortedPreviousSecond1: previousSortedPick1[1],
-                            sortedPreviousSecond2: previousSortedPick2[1],
-                            sortedPreviousSecond3: previousSortedPick3[1],
-                            sortedPreviousSecond4: previousSortedPick4[1],
-                            sortedPreviousSecond5: previousSortedPick5[1],
-                            sortedPreviousSecond6: previousSortedPick6[1],
-                            sortedPreviousSecond7: previousSortedPick7[1],
-                            sortedPreviousSecond8: previousSortedPick8[1],
-
-                            sortedPreviousThird1: previousSortedPick1[2],
-                            sortedPreviousThird2: previousSortedPick2[2],
-                            sortedPreviousThird3: previousSortedPick3[2],
-                            sortedPreviousThird4: previousSortedPick4[2],
-                            sortedPreviousThird5: previousSortedPick5[2],
-                            sortedPreviousThird6: previousSortedPick6[2],
-                            sortedPreviousThird7: previousSortedPick7[2],
-                            sortedPreviousThird8: previousSortedPick8[2],
-
-                            // Common fields
-                            fireball: parsedFireball,
-                            drawDate: dateInfo || null,
-                            drawMonth: dateInfo ? dateInfo.substring(0, 3) : null,
-                            index: r,
-                            time: drawInfo ? drawInfo.replace(/[^a-zA-Z]+/g, "") : null,
-                            timestamp: adminDb.firestore.Timestamp.now(),
-                        });
-
-                        // Update previous picks for sorted numbers
-                        previousSortedPick8 = [...previousSortedPick7];
-                        previousSortedPick7 = [...previousSortedPick6];
-                        previousSortedPick6 = [...previousSortedPick5];
-                        previousSortedPick5 = [...previousSortedPick4];
-                        previousSortedPick4 = [...previousSortedPick3];
-                        previousSortedPick3 = [...previousSortedPick2];
-                        previousSortedPick2 = [...previousSortedPick1];
-                        previousSortedPick1 = [sortedFirst, sortedSecond, sortedThird];
-
-                        // Update previous picks for original order
-                        previousOriginalPick8 = [...previousOriginalPick7];
-                        previousOriginalPick7 = [...previousOriginalPick6];
-                        previousOriginalPick6 = [...previousOriginalPick5];
-                        previousOriginalPick5 = [...previousOriginalPick4];
-                        previousOriginalPick4 = [...previousOriginalPick3];
-                        previousOriginalPick3 = [...previousOriginalPick2];
-                        previousOriginalPick2 = [...previousOriginalPick1];
-                        previousOriginalPick1 = [originalFirst, originalSecond, originalThird];
-                    }
-                }
-            }
-
+        let previousPicks = {
+            sorted: Array(8).fill([null, null, null]),
+            original: Array(8).fill([null, null, null])
         };
 
-        await checkResults();
-        await browser.close();
+        // Process pages sequentially
+        for (let pageNum = 9; pageNum >= 1; pageNum--) {
+            try {
+                console.log(`Starting to process page ${pageNum}`);
+                const result = await processPage(pageNum, currentMonth, previousPicks);
 
-        const infoCollection = adminDb.firestore().collection('draws');
-        const batch = adminDb.firestore().batch();
+                // Write the draws to Firestore
+                await writeBatchToFirestore(result.draws);
 
-        // Write the combined data
-        draws.forEach(draw => {
-            const docRef = infoCollection.doc();
-            batch.set(docRef, draw);
-        });
+                // Update previous picks for next iteration
+                previousPicks = result.previousPicks;
 
-        console.log('Total documents to write:', draws.length);
-
-        await batch.commit();
-        console.log('Batch write succeeded');
+                // Optional: Add a small delay between pages
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error) {
+                console.error(`Error processing page ${pageNum}:`, error);
+                // Continue with next page even if current page fails
+                continue;
+            }
+        }
 
         return new Response(JSON.stringify('good'), {
             status: 200,

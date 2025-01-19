@@ -3,7 +3,7 @@ import { useStore } from '../store/store'; // Ensure you import the correct stor
 export const playNums = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/newPlayNumbers',{
+        const response = await fetch('/api/play/unordered',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -17,6 +17,30 @@ export const playNums = async (formData) => {
             throw new Error('Failed to fetch posts');
         }
     } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+export const checkDraws = async () => {
+    const setCheckLoading = useStore.getState().setCheckLoading;
+    try {
+        setCheckLoading(true)
+        const response = await fetch('/api/passTest/unordered', {
+            method: 'GET',
+            cache: 'no-store'
+        });
+
+        if (response.ok) {
+            setCheckLoading(false)
+            const posts = await response.json();
+            return posts;
+        } else {
+            setCheckLoading(false)
+            throw new Error('Failed to check posts');
+        }
+    } catch (error) {
+        setCheckLoading(false)
         console.error(error);
         return [];
     }

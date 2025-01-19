@@ -19,7 +19,7 @@ import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useStore } from '@/app/store/store';
-import { playNums } from "@/app/services/playService";
+import { playNums, checkDraws } from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
 import {setDisplayInfo, getDisplayInfo} from "@/app/services/displayService";
@@ -105,6 +105,10 @@ const HomePage = () => {
     setLoading(false);
   };
 
+  const handleCheck = async () => {
+    await checkDraws();
+  };
+
   const handleDisplay = async () => {
     await setDisplayInfo()
   };
@@ -163,6 +167,22 @@ const HomePage = () => {
             >
               Play
             </Button>
+
+            {/*<Button*/}
+            {/*    variant="contained"*/}
+            {/*    disabled={loading}*/}
+            {/*    size="large"*/}
+            {/*    onClick={handleCheck}*/}
+            {/*    sx={{*/}
+            {/*      mt: 3,*/}
+            {/*      mb: 1,*/}
+            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
+            {/*      color: 'black',*/}
+            {/*      minWidth: 200,*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*  Check*/}
+            {/*</Button>*/}
 
             {numbers && numbers.length > 0 && (
                 <Box display="flex" flexDirection="column" alignItems="center">
