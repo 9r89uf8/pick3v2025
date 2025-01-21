@@ -3,7 +3,7 @@ import { useStore } from '../store/store'; // Ensure you import the correct stor
 export const playNums = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/unordered',{
+        const response = await fetch('/api/play/newPlayNumbers',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -26,7 +26,7 @@ export const checkDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/passTest/unordered', {
+        const response = await fetch('/api/passTest/one', {
             method: 'GET',
             cache: 'no-store'
         });

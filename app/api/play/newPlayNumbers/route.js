@@ -1,5 +1,5 @@
 // app/api/posts/route.js
-//120 possible combinations
+//90 possible combinations
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
@@ -28,57 +28,7 @@ const getMonths = () => {
     return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
 };
 
-function xS(combination, latestDraw) {
-    let found = false;
-    const current = combination
-    const prev0 = [latestDraw.sortedFirstNumber, latestDraw.sortedSecondNumber, latestDraw.sortedThirdNumber];
-    const prev1 = [latestDraw.sortedPreviousFirst1, latestDraw.sortedPreviousSecond1, latestDraw.sortedPreviousThird1];
-    const prev2 = [latestDraw.sortedPreviousFirst2, latestDraw.sortedPreviousSecond2, latestDraw.sortedPreviousThird2];
-    const prev3 = [latestDraw.sortedPreviousFirst3, latestDraw.sortedPreviousSecond3, latestDraw.sortedPreviousThird3];
-    const prev4 = [latestDraw.sortedPreviousFirst4, latestDraw.sortedPreviousSecond4, latestDraw.sortedPreviousThird4];
-    const prev5 = [latestDraw.sortedPreviousFirst5, latestDraw.sortedPreviousSecond5, latestDraw.sortedPreviousThird5];
-    const prev6 = [latestDraw.sortedPreviousFirst6, latestDraw.sortedPreviousSecond6, latestDraw.sortedPreviousThird6];
-    const prev7 = [latestDraw.sortedPreviousFirst7, latestDraw.sortedPreviousSecond7, latestDraw.sortedPreviousThird7];
 
-    // Create an array of all previous combinations
-    const prevCombinations = [prev0, prev1, prev2, prev3, prev4, prev5, prev6, prev7];
-
-    // Check if current matches any previous combination
-    found = prevCombinations.some(prev =>
-        prev[0] === current[0] &&
-        prev[1] === current[1] &&
-        prev[2] === current[2]
-    );
-
-    return found;
-}
-
-function tooSimilarToPrevious(combination, latestDraw) {
-    let found = false;
-    const c = combination
-
-    // current
-    if (c[0] === latestDraw.sortedFirstNumber && c[1] === latestDraw.sortedSecondNumber) found = true;
-    if (c[0] === latestDraw.sortedFirstNumber && c[2] === latestDraw.sortedThirdNumber) found = true;
-    if (c[1] === latestDraw.sortedSecondNumber && c[2] === latestDraw.sortedThirdNumber) found = true;
-
-    // previous1
-    if (c[0] === latestDraw.sortedPreviousFirst1 && c[1] === latestDraw.sortedPreviousSecond1) found = true;
-    if (c[0] === latestDraw.sortedPreviousFirst1 && c[2] === latestDraw.sortedPreviousThird1) found = true;
-    if (c[1] === latestDraw.sortedPreviousSecond1 && c[2] === latestDraw.sortedPreviousThird1) found = true;
-
-    // previous2
-    // if (c[0] === latestDraw.sortedPreviousFirst2 && c[1] === latestDraw.sortedPreviousSecond2) found = true;
-    // if (c[0] === latestDraw.sortedPreviousFirst2 && c[2] === latestDraw.sortedPreviousThird2) found = true;
-    // if (c[1] === latestDraw.sortedPreviousSecond2 && c[2] === latestDraw.sortedPreviousThird2) found = true;
-
-    // previous3
-    // if (c[0] === latestDraw.sortedPreviousFirst3 && c[1] === latestDraw.sortedPreviousSecond3) found = true;
-    // if (c[0] === latestDraw.sortedPreviousFirst3 && c[2] === latestDraw.sortedPreviousThird3) found = true;
-    // if (c[1] === latestDraw.sortedPreviousSecond3 && c[2] === latestDraw.sortedPreviousThird3) found = true;
-
-    return found;
-}
 
 function isExcluded(num, position, excludedNumbers) {
     if (position === 0) return excludedNumbers.first.includes(num);
@@ -105,20 +55,20 @@ function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
         if (new Set(draw).size !== 3) return false;
 
         // Check if numbers are in correct ranges and order
-        if (!(first >= 0 && first <= 3)) return false;
-        if (!(second >= 2 && second <= 7)) return false;
-        if (!(third >= 6 && third <= 9)) return false;
+        if (!(first >= 0 && first <= 2)) return false;
+        if (!(second >= 3 && second <= 6)) return false;
+        if (!(third >= 7 && third <= 9)) return false;
 
         // Check if numbers are in ascending order
         if (!(first < second && second < third)) return false;
 
         // Rule 6: if first number is 2 or 3, second number can't be 2 or 3
-        if ((first === 2) && (second === 2)) return false;
-        if ((first === 3) && (second === 3)) return false;
+        // if ((first === 2) && (second === 2)) return false;
+        // if ((first === 3) && (second === 3)) return false;
 
         // Rule 7: if second number is 6 or 7, third number can't be 6 or 7
-        if ((second === 6) && (third === 6)) return false;
-        if ((second === 7) && (third === 7)) return false;
+        // if ((second === 6) && (third === 6)) return false;
+        // if ((second === 7) && (third === 7)) return false;
 
         // Rule 8: Check if number has been used in same position before
         if (usedFirstNumbers.has(first)) return false;
@@ -133,13 +83,13 @@ function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
         let attempts = 0;
 
         while (attempts < maxAttempts) {
-            const first = Math.floor(Math.random() * 4); // 0-3
-            const second = Math.floor(Math.random() * 6) + 2; // 2-7
-            const third = Math.floor(Math.random() * 4) + 6; // 6-9
+            const first = Math.floor(Math.random() * 3);    // 0-2
+            const second = Math.floor(Math.random() * 4) + 3; // 3-6
+            const third = Math.floor(Math.random() * 3) + 7;  // 7-9
 
             const draw = [first, second, third];
 
-            if (isValidDraw(draw)&&!tooSimilarToPrevious(draw, latestDraw)&&!xS(draw, latestDraw)) {
+            if (isValidDraw(draw)) {
                 usedFirstNumbers.add(first);
                 usedSecondNumbers.add(second);
                 usedThirdNumbers.add(third);

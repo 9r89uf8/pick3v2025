@@ -72,9 +72,9 @@ const validateSortedDraw = (sortedNums) => {
 
     return (
         allDistinct &&
-        lowest >= 0 && lowest <= 4 &&
-        middle >= 2 && middle <= 7 &&
-        highest >= 5 && highest <= 9
+        lowest >= 0 && lowest <= 2 &&
+        middle >= 3 && middle <= 6 &&
+        highest >= 7 && highest <= 9
     );
 };
 
@@ -85,11 +85,11 @@ const validateSortedDraw = (sortedNums) => {
 const validateNumberByPosition = (num, position) => {
     switch (position) {
         case 'lowest':
-            return num >= 0 && num <= 4;
+            return num >= 0 && num <= 2;
         case 'middle':
-            return num >= 2 && num <= 7;
+            return num >= 3 && num <= 6;
         case 'highest':
-            return num >= 5 && num <= 9;
+            return num >= 7 && num <= 9;
         default:
             return false;
     }

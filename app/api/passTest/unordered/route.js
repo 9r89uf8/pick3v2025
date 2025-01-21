@@ -8,6 +8,8 @@ export async function GET() {
         const firestore = adminDb.firestore();
         const drawsCollection = firestore
             .collection("draws")
+            .where('drawMonth', '==', 'Jan')
+            .orderBy('index', 'desc');
 
         const snapshot = await drawsCollection.get();
         const draws = [];
@@ -24,6 +26,13 @@ export async function GET() {
             MHL: 0,
             HLM: 0,
             HML: 0
+        };
+
+        // Add counter for L positions
+        let lPositions = {
+            firstPosition: 0,
+            secondPosition: 0,
+            thirdPosition: 0
         };
 
         for (let i = 1; i < draws.length; i++) {
@@ -57,9 +66,17 @@ export async function GET() {
                 if (index === nums.length) {
                     if (rangeAssignments.size === 3 &&
                         [1, 2, 3].every(r => rangeAssignments.has(r))) {
-                        // Found a valid assignment, determine the pattern
+                        // Found a valid assignment
                         let pattern = determinePattern(nums, numberAssignments);
                         distributions[pattern]++;
+
+                        // Track L position
+                        const positions = pattern.split('');
+                        const lIndex = positions.indexOf('L');
+                        if (lIndex === 0) lPositions.firstPosition++;
+                        else if (lIndex === 1) lPositions.secondPosition++;
+                        else if (lIndex === 2) lPositions.thirdPosition++;
+
                         return true;
                     }
                     return false;
@@ -109,7 +126,8 @@ export async function GET() {
         const result = {
             totalDraws: draws.length,
             correctPredictions: totalCorrectPredictions,
-            distributions: distributions
+            distributions: distributions,
+            lPositions: lPositions  // Add L positions to the result
         };
         console.log(result)
 
