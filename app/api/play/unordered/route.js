@@ -52,9 +52,9 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
     */
 
     // The sets from which we pick actual L, M, and H values:
-    const L_vals = [0, 1, 2, 3, 4];
-    const M_vals = [2, 3, 4, 5, 6, 7];
-    const H_vals = [5, 6, 7, 8, 9];
+    const L_vals = [0, 1, 2];
+    const M_vals = [3, 4, 5, 6];
+    const H_vals = [7, 8, 9];
 
     // The 6 permutations we want to fulfill exactly once each:
     const permutations = [
@@ -156,9 +156,9 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
 // Function to generate extra draws with modified constraints
 // Function to generate extra draws with modified constraints
 function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { first: [], second: [], third: [] }, usedPositions) {
-    const L_vals = [0, 1, 2, 3, 4];
-    const M_vals = [2, 3, 4, 5, 6, 7];
-    const H_vals = [5, 6, 7, 8, 9];
+    const L_vals = [0, 1, 2];
+    const M_vals = [3, 4, 5, 6];
+    const H_vals = [7, 8, 9];
 
     const extraPermutations = [
         ["L","M","H"],

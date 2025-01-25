@@ -13,6 +13,7 @@ import {
   ToggleButtonGroup,
   Stack,
   IconButton,
+  ButtonGroup,
   Collapse,
 } from '@mui/material';
 import { alpha, styled } from "@mui/material/styles";
@@ -20,7 +21,7 @@ import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useStore } from '@/app/store/store';
-import { playNums, checkDraws } from "@/app/services/playService";
+import { playCombo, playStraight, checkDraws } from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
 import {setDisplayInfo, getDisplayInfo} from "@/app/services/displayService";
@@ -99,10 +100,16 @@ const HomePage = () => {
     }));
   };
 
-  const handlePlay = async () => {
+  const handleCombo = async () => {
     setLoading(true);
-    await playNums({ excludedNumbers });
+    await playCombo({ excludedNumbers });
     // await checkDraws();
+    setLoading(false);
+  };
+
+  const handleStraight = async () => {
+    setLoading(true);
+    await playStraight({ excludedNumbers });
     setLoading(false);
   };
 
@@ -148,26 +155,44 @@ const HomePage = () => {
             </Typography>
 
             <Stack spacing={3}>
-              {renderNumberSelection('first', [0, 1, 2], 'First Position')}
-              {renderNumberSelection('second', [3, 4, 5, 6], 'Second Position')}
-              {renderNumberSelection('third', [7, 8, 9], 'Third Position')}
+              {renderNumberSelection('first', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'First Position')}
+              {renderNumberSelection('second', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Second Position')}
+              {renderNumberSelection('third', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Third Position')}
             </Stack>
 
-            <Button
-                variant="contained"
-                disabled={loading}
-                size="large"
-                onClick={handlePlay}
-                sx={{
-                  mt: 3,
-                  mb: 1,
-                  background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
-                  color: 'black',
-                  minWidth: 200,
-                }}
-            >
-              Play
-            </Button>
+            <ButtonGroup variant="contained" aria-label="Basic button group">
+              <Button
+                  variant="contained"
+                  disabled={loading}
+                  size="large"
+                  onClick={handleCombo}
+                  sx={{
+                    mt: 3,
+                    mb: 1,
+                    background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
+                    color: 'black',
+                    minWidth: 200,
+                  }}
+              >
+                Combo
+              </Button>
+
+              <Button
+                  variant="contained"
+                  disabled={loading}
+                  size="large"
+                  onClick={handleStraight}
+                  sx={{
+                    mt: 3,
+                    mb: 1,
+                    background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
+                    color: 'black',
+                    minWidth: 200,
+                  }}
+              >
+                Straight
+              </Button>
+            </ButtonGroup>
 
             {/*<Button*/}
             {/*    variant="contained"*/}

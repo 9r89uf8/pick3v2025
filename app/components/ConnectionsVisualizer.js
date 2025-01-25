@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ConnectionsVisualizer = ({numbers}) => {
+const ConnectionsVisualizer = ({ numbers }) => {
     const totalHeight = 1570;
     const totalWidth = 975;
     const margin = 60;
@@ -50,11 +50,22 @@ const ConnectionsVisualizer = ({numbers}) => {
         return usedNumbers[columnIndex]?.has(number);
     };
 
-    const shouldHaveSpecialFill = (number, columnIndex) => {
-        if (columnIndex === 0) return number >= 0 && number <= 2;
-        if (columnIndex === 1) return number >= 3 && number <= 6;
-        if (columnIndex === 2) return number >= 7 && number <= 9;
-        return false;
+    /**
+     * Returns the background color for the circle around each digit.
+     * - If exactly 3 draws: use the "range" logic (0–2 => col0, 3–6 => col1, 7–9 => col2).
+     * - Otherwise: if this digit is actually used in that column, make it blue; else white.
+     */
+    const getBackgroundColor = (number, columnIndex) => {
+        if (numbers.length === 3) {
+            // Range logic
+            if (columnIndex === 0 && number >= 0 && number <= 2) return '#3B82F6';
+            if (columnIndex === 1 && number >= 3 && number <= 6) return '#3B82F6';
+            if (columnIndex === 2 && number >= 7 && number <= 9) return '#3B82F6';
+            return 'white';
+        } else {
+            // For any other number of draws, only highlight "used" numbers
+            return isNumberUsed(number, columnIndex) ? '#3B82F6' : 'white';
+        }
     };
 
     return (
@@ -116,12 +127,12 @@ const ConnectionsVisualizer = ({numbers}) => {
                         ))}
                         {[...Array(10)].map((_, i) => (
                             <g key={`text-${columnIndex}-${i}`}>
-                                {/* White circle background */}
+                                {/* Circle background (blue or white) */}
                                 <circle
                                     cx={getNumberXPosition(columnIndex)}
                                     cy={getYPosition(i) - 28 + numberYOffset}
                                     r="45"
-                                    fill={shouldHaveSpecialFill(i, columnIndex) ? '#3B82F6' : 'white'}
+                                    fill={getBackgroundColor(i, columnIndex)}
                                 />
                                 <text
                                     x={getNumberXPosition(columnIndex)}
@@ -145,6 +156,8 @@ const ConnectionsVisualizer = ({numbers}) => {
 };
 
 export default ConnectionsVisualizer;
+
+
 
 
 // import React from 'react';
