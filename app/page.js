@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
+import ProbabilityTable from "@/app/components/ProbabilityTable";
 import {
   Button,
   List,
@@ -250,6 +251,8 @@ const HomePage = () => {
 
 
           </Item>
+
+          <ProbabilityTable/>
 
 
           <Box sx={{ textAlign: 'center', mt: 1 }}>

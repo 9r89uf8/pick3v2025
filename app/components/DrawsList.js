@@ -10,8 +10,6 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
-    CheckCircleOutline,
-    Cancel,
     Today,
     AccessTime,
 } from '@mui/icons-material';
@@ -31,17 +29,10 @@ const StyledCard = styled(Card)(({ theme }) => ({
     },
 }));
 
-const NumberBox = styled(Box)(({ isvalid, theme }) => ({
+// A simple box with no validation-based styling:
+const NumberBox = styled(Box)(({ theme }) => ({
     padding: theme.spacing(1),
     borderRadius: theme.spacing(1),
-    backgroundColor: isvalid
-        ? alpha(theme.palette.success.main, 0.2)
-        : alpha(theme.palette.error.main, 0.1),
-    border: `1px solid ${
-        isvalid
-            ? theme.palette.success.main
-            : theme.palette.error.main
-    }`,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -59,9 +50,9 @@ const StatusChip = styled(Chip)(({ isvalid, theme }) => ({
 }));
 
 /**
- * Checks if the sorted[0] is in [0..4],
- * sorted[1] is in [2..7], and
- * sorted[2] is in [5..9],
+ * Checks if the sorted[0] is in [0..2],
+ * sorted[1] is in [3..6], and
+ * sorted[2] is in [7..9],
  * plus NO DUPLICATES (lowest, middle, highest must be distinct).
  */
 const validateSortedDraw = (sortedNums) => {
@@ -76,56 +67,6 @@ const validateSortedDraw = (sortedNums) => {
         middle >= 3 && middle <= 6 &&
         highest >= 7 && highest <= 9
     );
-};
-
-/**
- * Given a number and its position (lowest|middle|highest),
- * return true if it fits the expected range for that position.
- */
-const validateNumberByPosition = (num, position) => {
-    switch (position) {
-        case 'lowest':
-            return num >= 0 && num <= 2;
-        case 'middle':
-            return num >= 3 && num <= 6;
-        case 'highest':
-            return num >= 7 && num <= 9;
-        default:
-            return false;
-    }
-};
-
-/**
- * Determine if `num` in the original, unsorted array
- * corresponds to the `lowest`, `middle`, or `highest` position
- * in the sorted array. This is used so that we highlight
- * each box according to its intended position-based rule.
- */
-const getPositionInSortedDraw = (num, originalArray) => {
-    // Make a copy and sort the copy
-    const sorted = [...originalArray].sort((a, b) => a - b);
-
-    // Because there could be duplicates, we do a small trick:
-    // 1) find the index of the FIRST matching occurrence
-    // 2) temporarily set it to null so subsequent duplicates
-    //    won't snag the same index
-    for (let i = 0; i < sorted.length; i++) {
-        if (sorted[i] === num) {
-            if (i === 0) {
-                sorted[i] = null;
-                return 'lowest';
-            } else if (i === 1) {
-                sorted[i] = null;
-                return 'middle';
-            } else if (i === 2) {
-                sorted[i] = null;
-                return 'highest';
-            }
-        }
-    }
-
-    // Fallback in case something is off
-    return null;
 };
 
 const DrawList = ({ draws }) => {
@@ -157,46 +98,17 @@ const DrawList = ({ draws }) => {
                                         gap: 2,
                                     }}
                                 >
-                                    {rawNumbers.map((num, idx) => {
-                                        const position = getPositionInSortedDraw(
-                                            num,
-                                            rawNumbers
-                                        );
-
-                                        const isNumValid = validateNumberByPosition(
-                                            num,
-                                            position
-                                        );
-
-                                        return (
-                                            <NumberBox
-                                                key={idx}
-                                                isvalid={isNumValid}
+                                    {/* Render the raw numbers (no icons, no color check) */}
+                                    {rawNumbers.map((num, idx) => (
+                                        <NumberBox key={idx}>
+                                            <Typography
+                                                variant="h4"
+                                                color="white"
                                             >
-                                                <Typography
-                                                    variant="h4"
-                                                    color="white"
-                                                >
-                                                    {num}
-                                                </Typography>
-                                                {isNumValid ? (
-                                                    <CheckCircleOutline
-                                                        sx={{
-                                                            color: 'success.light',
-                                                            mt: 0.5,
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <Cancel
-                                                        sx={{
-                                                            color: 'error.light',
-                                                            mt: 0.5,
-                                                        }}
-                                                    />
-                                                )}
-                                            </NumberBox>
-                                        );
-                                    })}
+                                                {num}
+                                            </Typography>
+                                        </NumberBox>
+                                    ))}
                                 </Box>
 
                                 <Box
