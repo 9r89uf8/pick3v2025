@@ -74,7 +74,7 @@ const FireballBox = styled(Box)(({ theme }) => ({
     borderRadius: '50%',
     background: `radial-gradient(
         circle at 30% 30%, 
-        #ffffff 0%,
+        #e9ecef 0%,
         #ffd700 25%,
         #ff4500 60%,
         #ff0000 100%
