@@ -11,7 +11,7 @@ export const useStore = create(
         (...a) => ({
             ...createPostSlice(...a),
             ...createPlaySlice(...a),
-            ...createHistorySlice(...a),
+            ...createHistorySlice(...a)
         }),
         {
             name: 'ggg', // unique name for the storage

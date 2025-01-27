@@ -23,7 +23,7 @@ const getMonths = (n) => {
 
 export async function GET() {
     try {
-        const months = getMonths(5); // Get the current month and the previous 4 months
+        const months = getMonths(2); // Get the current month and the previous 4 months
         console.log(months)
         const firestore = adminDb.firestore();
 
