@@ -165,10 +165,25 @@ const DrawList = ({ draws }) => {
                                         gap: 2,
                                     }}
                                 >
-                                    <StatusChip
-                                        label={drawIsValid ? 'VALID' : 'INVALID'}
-                                        isvalid={drawIsValid}
-                                    />
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            gap: 1,
+                                            flexWrap: 'wrap',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        <StatusChip
+                                            label={drawIsValid ? 'VALID' : 'INVALID'}
+                                            isvalid={drawIsValid}
+                                        />
+                                        {item.isValidFireball && (
+                                            <StatusChip
+                                                label="VALID FIREBALL"
+                                                isvalid={true}
+                                            />
+                                        )}
+                                    </Box>
                                     <Box
                                         sx={{
                                             display: 'flex',

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
 import ProbabilityTable from "@/app/components/ProbabilityTable";
+import StatsDisplay from "@/app/components/StatsDisplay";
 import {
   Button,
   List,
@@ -231,47 +232,8 @@ const HomePage = () => {
             )}
 
 
-            {/*add content here*/}
             {display && (
-                <Box sx={{ mt: 4 }}>
-                  <Stack direction="row" spacing={4} justifyContent="center">
-
-                    {/* =========== Current Month =========== */}
-                    <Box textAlign="center">
-                      <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
-                        {display.currentMonth?.month}
-                      </Typography>
-                      <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
-                        {display.currentMonth?.totalPassed} / {display.currentMonth?.totalDraws}
-                      </Typography>
-                      <Typography variant="h5" sx={{ color: '#ffffff' }}>
-                        {display.currentMonth?.percentage
-                            ? display.currentMonth.percentage.toFixed(0)
-                            : '0'}
-                        %
-                      </Typography>
-                    </Box>
-
-                    {/* =========== Previous Month =========== */}
-                    {display.previousMonth && (
-                        <Box textAlign="center">
-                          <Typography variant="h5" sx={{ color: '#ffc300', mb: 1 }}>
-                            {display.previousMonth.month}
-                          </Typography>
-                          <Typography variant="h5" sx={{ color: '#ffffff', mb: 1 }}>
-                            {display.previousMonth.totalPassed} / {display.previousMonth.totalDraws}
-                          </Typography>
-                          <Typography variant="h5" sx={{ color: '#ffffff' }}>
-                            {display.previousMonth.percentage
-                                ? display.previousMonth.percentage.toFixed(0)
-                                : '0'}
-                            %
-                          </Typography>
-                        </Box>
-                    )}
-
-                  </Stack>
-                </Box>
+                <StatsDisplay display={display} />
             )}
 
 

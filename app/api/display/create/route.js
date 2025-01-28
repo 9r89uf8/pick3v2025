@@ -1,5 +1,5 @@
 // app/api/posts/route.js
-import {adminDb} from '@/app/utils/firebaseAdmin';
+import { adminDb } from '@/app/utils/firebaseAdmin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,11 +12,11 @@ const getMonths = () => {
     let previousMonthIndex;
 
     if (currentMonthIndex === 0) {
-        twoMonthsAgoIndex = 10;
-        previousMonthIndex = 11;
+        twoMonthsAgoIndex = 10; // (Dec -> Oct)
+        previousMonthIndex = 11; // (Dec -> Nov)
     } else if (currentMonthIndex === 1) {
-        twoMonthsAgoIndex = 11;
-        previousMonthIndex = 0;
+        twoMonthsAgoIndex = 11; // (Jan -> Nov)
+        previousMonthIndex = 0;  // (Jan -> Dec)
     } else {
         twoMonthsAgoIndex = currentMonthIndex - 2;
         previousMonthIndex = currentMonthIndex - 1;
@@ -26,14 +26,24 @@ const getMonths = () => {
     return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
 };
 
+function validateThreeDigits(a, b, c) {
+    const firstNumberValid = a <= 2;        // Must be <= 2
+    const secondNumberValid = b >= 3 && b <= 6; // Must be between 3 and 6
+    const thirdNumberValid = c >= 7;        // Must be >= 7
+    const uniqueCheck = (a !== b) && (b !== c) && (a !== c);
 
+    return (firstNumberValid && secondNumberValid && thirdNumberValid && uniqueCheck);
+}
 
 export async function GET() {
     try {
         const [prevMonth, currentMonth] = getMonths();
-        const drawsCollectionRef = adminDb.firestore().collection('draws')
+
+        const drawsCollectionRef = adminDb.firestore()
+            .collection('draws')
             .where('drawMonth', '==', currentMonth)
             .orderBy('index', 'desc');
+
         const snapshot = await drawsCollectionRef.get();
         const draws = [];
         const batch = adminDb.firestore().batch();
@@ -46,82 +56,87 @@ export async function GET() {
         });
 
         let totalCorrectPredictions = 0;
+        let totalFireballPredictions = 0;  // New counter for Fireball predictions
         let totalDraws = draws.length;
 
-        // Update each draw document with isValid flag
+        // Update each draw document with isValid and isValidFireball
         for (let i = 0; i < draws.length; i++) {
-            let draw = draws[i];
-            console.log(`\nValidating draw: ${draw.sortedFirstNumber},${draw.sortedSecondNumber},${draw.sortedThirdNumber}`);
+            const draw = draws[i];
+            console.log(
+                `\nValidating draw: ${draw.sortedFirstNumber}, ${draw.sortedSecondNumber}, ${draw.sortedThirdNumber}`
+            );
 
-            // Check each condition separately and log failures
-            const firstNumberValid = draw.sortedFirstNumber <= 2;
-            if (!firstNumberValid) {
-                console.log(`Failed: First number ${draw.sortedFirstNumber} is greater than 3`);
-            }
+            const { sortedFirstNumber, sortedSecondNumber, sortedThirdNumber, fireball } = draw;
 
-            const secondNumberValid = draw.sortedSecondNumber >= 3 && draw.sortedSecondNumber <= 6;
-            if (!secondNumberValid) {
-                console.log(`Failed: Second number ${draw.sortedSecondNumber} is not between 2 and 7`);
-            }
-
-            const thirdNumberValid = draw.sortedThirdNumber >= 7;
-            if (!thirdNumberValid) {
-                console.log(`Failed: Third number ${draw.sortedThirdNumber} is less than 6`);
-            }
-
-
-            const isValid = firstNumberValid && secondNumberValid && thirdNumberValid && draw.sortedFirstNumber!==draw.sortedSecondNumber && draw.sortedThirdNumber!==draw.sortedSecondNumber
-
+            // === Compute isValid (original 3-digit check) ===
+            const isValid = validateThreeDigits(sortedFirstNumber, sortedSecondNumber, sortedThirdNumber);
             if (isValid) {
                 totalCorrectPredictions++;
                 console.log('Draw passed all validations');
+            } else {
+                console.log('Draw failed validations');
             }
 
-            // Update the draw document
+            // === Compute isValidFireball (Fireball check) ===
+            let isValidFireball = false;
+
+            if (typeof fireball === 'number') {
+                // For each digit replaced by Fireball, sort them, then validate
+                const replacedA = [fireball, sortedSecondNumber, sortedThirdNumber].sort((x, y) => x - y);
+                const replacedB = [sortedFirstNumber, fireball, sortedThirdNumber].sort((x, y) => x - y);
+                const replacedC = [sortedFirstNumber, sortedSecondNumber, fireball].sort((x, y) => x - y);
+
+                const checkA = validateThreeDigits(replacedA[0], replacedA[1], replacedA[2]);
+                const checkB = validateThreeDigits(replacedB[0], replacedB[1], replacedB[2]);
+                const checkC = validateThreeDigits(replacedC[0], replacedC[1], replacedC[2]);
+
+                isValidFireball = checkA || checkB || checkC;
+
+                if (isValidFireball) {
+                    totalFireballPredictions++;
+                }
+            }
+
+            // Update the draw document in Firestore
             const drawRef = adminDb.firestore().collection('draws').doc(draw.id);
-            batch.update(drawRef, { isValid });
+            batch.update(drawRef, {
+                isValid,
+                isValidFireball
+            });
         }
 
-        // Create or update stats document
+        // Create or update stats document for the current month
         const statsRef = adminDb.firestore().collection('drawStats').doc(currentMonth);
         batch.set(statsRef, {
             month: currentMonth,
             totalDraws,
             totalPassed: totalCorrectPredictions,
+            totalFireballPassed: totalFireballPredictions,  // New stat
             percentage: (totalCorrectPredictions / totalDraws) * 100,
+            fireballPercentage: (totalFireballPredictions / totalDraws) * 100,  // New percentage
             lastUpdated: adminDb.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
-        // Commit all updates
         await batch.commit();
 
-// =============================================
-        // Now read back the CURRENT and PREVIOUS month stats from drawStats.
-        // =============================================
+        // Read current & previous month stats
         const statsCollection = adminDb.firestore().collection('drawStats');
 
-        // 1. Current month
         const currentDoc = await statsCollection.doc(currentMonth).get();
-        let currentData = null;
-        if (currentDoc.exists) {
-            currentData = currentDoc.data();
-        }
+        let currentData = currentDoc.exists ? currentDoc.data() : null;
 
-        // 2. Previous month
         const prevDoc = await statsCollection.doc(prevMonth).get();
-        let prevData = null;
-        if (prevDoc.exists) {
-            prevData = prevDoc.data();
-        }
+        let prevData = prevDoc.exists ? prevDoc.data() : null;
 
-        // Build final response in desired shape
         const responsePayload = {
             currentMonth: currentData
                 ? {
                     month: currentData.month,
                     totalDraws: currentData.totalDraws,
                     totalPassed: currentData.totalPassed,
+                    totalFireballPassed: currentData.totalFireballPassed,  // Include in response
                     percentage: currentData.percentage,
+                    fireballPercentage: currentData.fireballPercentage,    // Include in response
                 }
                 : null,
             previousMonth: prevData
@@ -129,7 +144,9 @@ export async function GET() {
                     month: prevData.month,
                     totalDraws: prevData.totalDraws,
                     totalPassed: prevData.totalPassed,
+                    totalFireballPassed: prevData.totalFireballPassed,     // Include in response
                     percentage: prevData.percentage,
+                    fireballPercentage: prevData.fireballPercentage,       // Include in response
                 }
                 : null,
         };
@@ -149,3 +166,4 @@ export async function GET() {
         });
     }
 }
+
