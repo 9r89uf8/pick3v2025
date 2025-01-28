@@ -38,6 +38,8 @@ function validateThreeDigits(a, b, c) {
 export async function GET() {
     try {
         const [prevMonth, currentMonth] = getMonths();
+        // const currentMonth = 'Oct'
+        // const prevMonth = 'Sep'
 
         const drawsCollectionRef = adminDb.firestore()
             .collection('draws')

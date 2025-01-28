@@ -8,8 +8,9 @@ import {
     Tab,
     Paper,
     alpha,
-    styled
+    styled, Button
 } from '@mui/material';
+import {setDisplayInfo} from "@/app/services/displayService";
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -68,6 +69,7 @@ const StatCard = ({ title, value, total, percentage }) => (
 const MonthlyStats = ({ data, title }) => {
     if (!data) return null;
 
+
     return (
         <StyledCard elevation={0}>
             <CardContent>
@@ -105,6 +107,10 @@ const StatsDisplay = ({ display }) => {
     const [value, setValue] = useState(0);
 
     if (!display) return null;
+
+    const handleDisplay = async () => {
+        await setDisplayInfo()
+    };
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -152,6 +158,19 @@ const StatsDisplay = ({ display }) => {
                     />
                 )}
             </Box>
+
+            <Button
+                variant="contained"
+                size="large"
+                onClick={handleDisplay}
+                sx={{
+                    mt: 2,
+                    background: 'linear-gradient(to right, #6c757d, #495057)',
+                    color: 'black',
+                }}
+            >
+                Update
+            </Button>
         </Box>
     );
 };

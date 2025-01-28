@@ -25,7 +25,7 @@ import { useStore } from '@/app/store/store';
 import { playCombo, playStraight, checkDraws } from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
-import {setDisplayInfo, getDisplayInfo} from "@/app/services/displayService";
+import { getDisplayInfo } from "@/app/services/displayService";
 
 const Item = styled(Paper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -118,9 +118,6 @@ const HomePage = () => {
     await checkDraws();
   };
 
-  const handleDisplay = async () => {
-    await setDisplayInfo()
-  };
 
   const handleClear = () => {
     clearNumbers();
@@ -254,19 +251,6 @@ const HomePage = () => {
           <Collapse in={expandSection}>
             <Item elevation={4}>
               <PostCreationButtons />
-
-              <Button
-                  variant="contained"
-                  size="large"
-                  onClick={handleDisplay}
-                  sx={{
-                    mt: 2,
-                    background: 'linear-gradient(to right, #6c757d, #495057)',
-                    color: 'black',
-                  }}
-              >
-                get
-              </Button>
             </Item>
           </Collapse>
 
