@@ -73,20 +73,24 @@ const ProbabilityDisplay = () => {
             {/* Centered Toggle Button */}
             <Box
                 sx={{
-                    mb: 2,
+                    mb: 3,
                     display: 'flex',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
                 }}
             >
                 <Button
                     variant="contained"
                     onClick={() => setShowProbabilities((prev) => !prev)}
                     sx={{
+                        fontSize: '1rem', // larger button text
                         backgroundColor: theme.palette.grey[800],
                         color: '#fff',
                         '&:hover': {
                             backgroundColor: theme.palette.grey[900],
                         },
+                        textTransform: 'none', // remove uppercase if desired
+                        px: 2, // increase horizontal padding
+                        py: 1, // increase vertical padding
                     }}
                 >
                     {showProbabilities ? 'Hide Probabilities' : 'Show Probabilities'}
@@ -118,6 +122,7 @@ const ProbabilityDisplay = () => {
                                             color: 'primary.main',
                                             mb: 3,
                                             textAlign: 'center',
+                                            fontSize: '1.5rem', // larger heading
                                         }}
                                     >
                                         {betType.label}
@@ -127,19 +132,58 @@ const ProbabilityDisplay = () => {
                                         <Table size="small">
                                             <TableHead>
                                                 <TableRow>
-                                                    <TableCell>Scenario</TableCell>
-                                                    <TableCell align="right">Combos</TableCell>
-                                                    <TableCell align="right">Probability</TableCell>
-                                                    <TableCell align="right">Rate</TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            fontSize: '1.1rem', // larger column headers
+                                                        }}
+                                                    >
+                                                        Scenario
+                                                    </TableCell>
+                                                    <TableCell
+                                                        align="right"
+                                                        sx={{ fontWeight: 600, fontSize: '1.1rem' }}
+                                                    >
+                                                        Combos
+                                                    </TableCell>
+                                                    <TableCell
+                                                        align="right"
+                                                        sx={{ fontWeight: 600, fontSize: '1.1rem' }}
+                                                    >
+                                                        Probability
+                                                    </TableCell>
+                                                    <TableCell
+                                                        align="right"
+                                                        sx={{ fontWeight: 600, fontSize: '1.1rem' }}
+                                                    >
+                                                        Rate
+                                                    </TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {betType.scenarios.map((scenario) => (
                                                     <TableRow key={scenario.subLabel}>
-                                                        <TableCell>{scenario.subLabel}</TableCell>
-                                                        <TableCell align="right">{scenario.combos}</TableCell>
-                                                        <TableCell align="right">{scenario.probability}</TableCell>
-                                                        <TableCell align="right">{scenario.rate}</TableCell>
+                                                        <TableCell sx={{ fontSize: '1rem' }}>
+                                                            {scenario.subLabel}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            align="right"
+                                                            sx={{ fontSize: '1rem' }}
+                                                        >
+                                                            {scenario.combos}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            align="right"
+                                                            sx={{ fontSize: '1rem' }}
+                                                        >
+                                                            {scenario.probability}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            align="right"
+                                                            sx={{ fontSize: '1rem' }}
+                                                        >
+                                                            {scenario.rate}
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -156,3 +200,4 @@ const ProbabilityDisplay = () => {
 };
 
 export default ProbabilityDisplay;
+
