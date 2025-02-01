@@ -1,5 +1,5 @@
 // app/api/posts/route.js
-//90 possible combinations
+// 36 possible combinations (3 x 4 x 3)
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
@@ -28,8 +28,6 @@ const getMonths = () => {
     return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
 };
 
-
-
 function isExcluded(num, position, excludedNumbers) {
     if (position === 0) return excludedNumbers.first.includes(num);
     if (position === 1) return excludedNumbers.second.includes(num);
@@ -37,82 +35,83 @@ function isExcluded(num, position, excludedNumbers) {
     return false;
 }
 
+// Helper: Shuffle an array in place
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Pre-generate all possible combinations based on the allowed ranges
+function generateAllCombinations(excludedNumbers) {
+    const combinations = [];
+    // first: 0-2, second: 3-6, third: 7-9
+    for (let first = 0; first < 3; first++) {
+        if (isExcluded(first, 0, excludedNumbers)) continue;
+        for (let second = 3; second < 7; second++) {
+            if (isExcluded(second, 1, excludedNumbers)) continue;
+            for (let third = 7; third < 10; third++) {
+                if (isExcluded(third, 2, excludedNumbers)) continue;
+                // The ranges are disjoint so the numbers are always distinct and in ascending order.
+                combinations.push([first, second, third]);
+            }
+        }
+    }
+    return combinations;
+}
+
+// Generate draws by selecting from the pre-generated pool while enforcing positional uniqueness
 function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
+    // Generate the full pool of valid combinations
+    let pool = generateAllCombinations(excludedNumbers);
+    // Shuffle the pool to ensure randomness
+    pool = shuffle(pool);
+
+    const selectedDraws = [];
+
+    // Sets to track used numbers in each position across the selected draws.
     const usedFirstNumbers = new Set();
     const usedSecondNumbers = new Set();
     const usedThirdNumbers = new Set();
-    const draws = [];
 
-    function isValidDraw(draw) {
-        const [first, second, third] = draw;
+    // Loop until we have the desired number of draws or run out of valid candidates.
+    while (selectedDraws.length < numberOfDraws && pool.length > 0) {
+        // Find the index of the first candidate that doesn't conflict with previously used numbers.
+        const candidateIndex = pool.findIndex(draw => {
+            const [first, second, third] = draw;
+            return !usedFirstNumbers.has(first) &&
+                !usedSecondNumbers.has(second) &&
+                !usedThirdNumbers.has(third);
+        });
 
-        // Check excluded numbers
-        for (let i = 0; i < 3; i++) {
-            if (isExcluded(draw[i], i, excludedNumbers)) return false;
+        if (candidateIndex === -1) {
+            // No candidate found that satisfies the positional uniqueness requirement.
+            break;
         }
 
-        // Check for repeating numbers in the draw
-        if (new Set(draw).size !== 3) return false;
+        // Select the candidate and remove it from the pool.
+        const candidate = pool[candidateIndex];
+        pool.splice(candidateIndex, 1);
+        selectedDraws.push(candidate);
 
-        // Check if numbers are in correct ranges and order
-        if (!(first >= 0 && first <= 2)) return false;
-        if (!(second >= 3 && second <= 6)) return false;
-        if (!(third >= 7 && third <= 9)) return false;
+        // Mark the numbers as used in their respective positions.
+        usedFirstNumbers.add(candidate[0]);
+        usedSecondNumbers.add(candidate[1]);
+        usedThirdNumbers.add(candidate[2]);
 
-        // Check if numbers are in ascending order
-        if (!(first < second && second < third)) return false;
-
-        // Rule 6: if first number is 2 or 3, second number can't be 2 or 3
-        // if ((first === 2) && (second === 2)) return false;
-        // if ((first === 3) && (second === 3)) return false;
-
-        // Rule 7: if second number is 6 or 7, third number can't be 6 or 7
-        // if ((second === 6) && (third === 6)) return false;
-        // if ((second === 7) && (third === 7)) return false;
-
-        // Rule 8: Check if number has been used in same position before
-        if (usedFirstNumbers.has(first)) return false;
-        if (usedSecondNumbers.has(second)) return false;
-        if (usedThirdNumbers.has(third)) return false;
-
-        return true;
+        // Optionally, filter the pool to remove any draws that conflict with these used numbers.
+        pool = pool.filter(draw => {
+            const [first, second, third] = draw;
+            return !usedFirstNumbers.has(first) &&
+                !usedSecondNumbers.has(second) &&
+                !usedThirdNumbers.has(third);
+        });
     }
 
-    function generateSingleDraw() {
-        const maxAttempts = 1000;
-        let attempts = 0;
-
-        while (attempts < maxAttempts) {
-            const first = Math.floor(Math.random() * 3);    // 0-2
-            const second = Math.floor(Math.random() * 4) + 3; // 3-6
-            const third = Math.floor(Math.random() * 3) + 7;  // 7-9
-
-            const draw = [first, second, third];
-
-            if (isValidDraw(draw)) {
-                usedFirstNumbers.add(first);
-                usedSecondNumbers.add(second);
-                usedThirdNumbers.add(third);
-                return draw;
-            }
-
-            attempts++;
-        }
-
-        return null; // Could not generate valid draw
-    }
-
-    while (draws.length < numberOfDraws) {
-        const draw = generateSingleDraw();
-        if (draw === null) {
-            break; // No more valid combinations possible
-        }
-        draws.push(draw);
-    }
-
-    return draws;
+    return selectedDraws;
 }
-
 
 // Modified POST handler
 export async function POST(req) {
@@ -154,7 +153,8 @@ export async function POST(req) {
         });
 
         const draws = allDraws.slice(0, 4);
-// Test the function
+
+        // Generate new draws using the pre-generated combination approach.
         const drawsS = generateDraws(3, draws[0], excludedNumbers);
 
         return new Response(JSON.stringify(drawsS), {
