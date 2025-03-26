@@ -1,6 +1,7 @@
 // store/postSlice.js
 export const createPostSlice = (set) => ({
     posts: [],
+    recurrence: null,
     post: null,
     isLoading: {
         createPost: false,
@@ -9,6 +10,7 @@ export const createPostSlice = (set) => ({
     },
     checkLoading: false,
     setPost: (post) => set({ post }),
+    setRecurrence: (recurrence) => set({ recurrence }),
     setPosts: (posts) => set({ posts }),
     addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
     removePost: (id) => set((state) => ({ posts: state.posts.filter((post) => post.id !== id) })),

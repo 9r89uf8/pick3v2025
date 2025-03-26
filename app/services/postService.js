@@ -3,6 +3,7 @@ import { useStore } from '../store/store'; // Ensure you import the correct stor
 // Fetch posts from the API
 export const fetchPosts = async () => {
     const setPosts = useStore.getState().setPosts;
+    const setRecurrence = useStore.getState().setRecurrence;
     try {
         const response = await fetch('/api/posts/all', {
             method: 'GET',
@@ -11,7 +12,8 @@ export const fetchPosts = async () => {
 
         if (response.ok) {
             const posts = await response.json();
-            setPosts(posts);
+            setPosts(posts.draws);
+            setRecurrence(posts.numberStats);
             return posts;
         } else {
             throw new Error('Failed to fetch posts');

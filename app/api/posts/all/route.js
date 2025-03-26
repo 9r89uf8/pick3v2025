@@ -19,12 +19,50 @@ const getMonths = (n) => {
     return months; // Months are in reverse chronological order
 };
 
+// Function to calculate comprehensive statistics about number occurrences
+function calculateNumberStatistics(numbers) {
+    const indices = {};
+    const stats = [];
 
+    // First pass: record all indices where each number appears
+    numbers.forEach((num, index) => {
+        if (!indices[num]) {
+            indices[num] = [];
+        }
+        indices[num].push(index);
+    });
+
+    // Calculate statistics for each number
+    for (const [num, positions] of Object.entries(indices)) {
+        // Calculate distances between consecutive occurrences
+        const distances = [];
+        for (let i = 0; i < positions.length - 1; i++) {
+            distances.push(positions[i + 1] - positions[i]);
+        }
+
+        // Calculate average wait time (if applicable)
+        let averageWaitTime = 0;
+        if (distances.length > 0) {
+            averageWaitTime = distances.reduce((sum, val) => sum + val, 0) / distances.length;
+        }
+
+        // Calculate time since last occurrence (position 0 is the most recent)
+        const timeSinceLastOccurrence = positions[0];
+
+        stats[num] = {
+            totalOccurrences: positions.length,
+            timeSinceLastOccurrence: timeSinceLastOccurrence,
+            averageWaitTime: averageWaitTime.toFixed(2), // Round to 2 decimal places
+            recurrenceDistances: distances.length > 0 ? distances : ["Only occurs once"]
+        };
+    }
+
+    return stats;
+}
 
 export async function GET() {
     try {
-        const months = getMonths(2); // Get the current month and the previous 4 months
-        console.log(months)
+        const months = getMonths(1); // Get the current month and the previous month
         const firestore = adminDb.firestore();
 
         // Query for the specified months
@@ -54,8 +92,22 @@ export async function GET() {
             }
         });
 
+        // Extract firstNumbers
+        let firstNumbers = [];
+        for (const draw of draws) {
+            firstNumbers.push(draw.sortedFirstNumber);
+        }
 
-        return new Response(JSON.stringify(draws), {
+        // Calculate comprehensive statistics for each number
+        const numberStats = calculateNumberStatistics(firstNumbers);
+
+        // Add statistics to the response
+        const response = {
+            draws: draws,
+            numberStats: numberStats
+        };
+
+        return new Response(JSON.stringify(response), {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
@@ -63,7 +115,7 @@ export async function GET() {
             },
         });
     } catch (error) {
-        console.log(error.message)
+        console.log(error.message);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },

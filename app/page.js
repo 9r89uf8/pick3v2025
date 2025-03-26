@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
+import Stats from "@/app/components/Stats";
+import MarkovSecondOrder from "@/app/components/MarkovSecondOrder";
+import MarkovFirstOrder from "@/app/components/MarkovFirstOrder";
 import ProbabilityTable from "@/app/components/ProbabilityTable";
 import StatsDisplay from "@/app/components/StatsDisplay";
 import {
@@ -70,6 +73,7 @@ const ExpandButton = styled(IconButton)(({ theme }) => ({
 
 const HomePage = () => {
   const posts = useStore((state) => state.posts);
+  const recurrence = useStore((state) => state.recurrence);
   const numbers = useStore((state) => state.numbers);
   const display = useStore((state) => state.display);
   const [loading, setLoading] = useState(false);
@@ -192,21 +196,21 @@ const HomePage = () => {
               </Button>
             </ButtonGroup>
 
-            {/*<Button*/}
-            {/*    variant="contained"*/}
-            {/*    disabled={loading}*/}
-            {/*    size="large"*/}
-            {/*    onClick={handleCheck}*/}
-            {/*    sx={{*/}
-            {/*      mt: 3,*/}
-            {/*      mb: 1,*/}
-            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
-            {/*      color: 'black',*/}
-            {/*      minWidth: 200,*/}
-            {/*    }}*/}
-            {/*>*/}
-            {/*  Check*/}
-            {/*</Button>*/}
+            <Button
+                variant="contained"
+                disabled={loading}
+                size="large"
+                onClick={handleCheck}
+                sx={{
+                  mt: 3,
+                  mb: 1,
+                  background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
+                  color: 'black',
+                  minWidth: 200,
+                }}
+            >
+              Check
+            </Button>
 
             {numbers && numbers.length > 0 && (
                 <Box display="flex" flexDirection="column" alignItems="center">
@@ -254,8 +258,12 @@ const HomePage = () => {
             </Item>
           </Collapse>
 
+          <MarkovFirstOrder/>
+          <MarkovSecondOrder/>
+          <Stats draws={recurrence} />
           {posts.length > 0 ? (
               <Box display="flex" flexDirection="column" alignItems="center">
+
                 <List>
                   <DrawsList draws={posts} />
                 </List>

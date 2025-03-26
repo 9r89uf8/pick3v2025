@@ -100,7 +100,7 @@ const validateSortedDraw = (sortedNums) => {
 const DrawList = ({ draws }) => {
     return (
         <Grid container spacing={3} sx={{ p: 3 }}>
-            {draws?.slice(0, 60).map((item, index) => {
+            {draws?.slice(0, 200).map((item, index) => {
                 const rawNumbers = [
                     Number(item.sortedFirstNumber),
                     Number(item.sortedSecondNumber),
