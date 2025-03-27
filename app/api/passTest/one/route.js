@@ -6,41 +6,70 @@ export const revalidate = 0;
 
 // Function to calculate comprehensive statistics about number occurrences
 function calculateNumberStatistics(numbers) {
+    // Handle empty or invalid input
+    if (!numbers || numbers.length === 0) {
+        return [];
+    }
+
     const indices = {};
-    const stats = [];
+    const totalNumbers = numbers.length; // Get total count for percentage calculation
 
     // First pass: record all indices where each number appears
     numbers.forEach((num, index) => {
-        if (!indices[num]) {
-            indices[num] = [];
+        // Ensure the key in indices is treated consistently (e.g., as a string)
+        const key = String(num);
+        if (!indices[key]) {
+            indices[key] = [];
         }
-        indices[num].push(index);
+        indices[key].push(index);
     });
 
-    // Calculate statistics for each number
-    for (const [num, positions] of Object.entries(indices)) {
+    const stats = []; // Initialize as an empty array to store result objects
+
+    // Calculate statistics for each unique number found
+    for (const [numStr, positions] of Object.entries(indices)) {
+        const num = parseInt(numStr); // Convert string key back to number if needed
+        const totalOccurrences = positions.length;
+
+        // Calculate percentage of occurrences
+        const occurrencesPercentage = (totalOccurrences / totalNumbers) * 100;
+
+        // Sort positions numerically to ensure correct distance and timeSinceLast calculations
+        const sortedPositions = positions.sort((a, b) => a - b);
+
         // Calculate distances between consecutive occurrences
         const distances = [];
-        for (let i = 0; i < positions.length - 1; i++) {
-            distances.push(positions[i + 1] - positions[i]);
+        for (let i = 0; i < sortedPositions.length - 1; i++) {
+            // Distance is the gap between indices
+            distances.push(sortedPositions[i + 1] - sortedPositions[i]);
         }
 
-        // Calculate average wait time (if applicable)
+        // Calculate average wait time (average distance between occurrences)
         let averageWaitTime = 0;
         if (distances.length > 0) {
             averageWaitTime = distances.reduce((sum, val) => sum + val, 0) / distances.length;
+        } else if (totalOccurrences === 1) {
+            // Handle single occurrence case - average wait is undefined/infinite
+            // Set to 0, null, or totalNumbers based on desired representation
+            averageWaitTime = 0; // Defaulting to 0, adjust if needed
         }
 
-        // Calculate time since last occurrence (position 0 is the most recent)
-        const timeSinceLastOccurrence = positions[0];
+        // Calculate time since last occurrence (index of the most recent occurrence)
+        // Since index 0 is the most recent item, the smallest index in sortedPositions is the most recent occurrence.
+        const timeSinceLastOccurrence = sortedPositions[0];
 
-        stats[num] = {
-            number: num,
-            totalOccurrences: positions.length,
-            timeSinceLastOccurrence: timeSinceLastOccurrence,
-            averageWaitTime: averageWaitTime.toFixed(2)
-        };
+        // Push the stats object into the results array
+        stats.push({
+            number: num, // Store the actual number
+            totalOccurrences: totalOccurrences,
+            occurrencesPercentage: occurrencesPercentage.toFixed(2), // Format percentage
+            timeSinceLastOccurrence: timeSinceLastOccurrence, // Index of most recent
+            averageWaitTime: averageWaitTime.toFixed(2)      // Format average wait
+        });
     }
+
+    // Optional: Sort the final stats array by number for consistent output order
+    stats.sort((a, b) => a.number - b.number);
 
     return stats;
 }
@@ -136,7 +165,7 @@ export async function GET() {
         // Query for the specified months
         const drawsCollection = firestore
             .collection("draws")
-            .where("drawMonth", "==", 'Jan');
+            .where("drawMonth", "==", 'Dec');
 
         const snapshot = await drawsCollection.get();
         const draws = [];
@@ -167,6 +196,8 @@ export async function GET() {
         let totalFirst = 0;
         let totalSecond = 0;
         let totalThird = 0;
+        let totalCorrectIfAlwaysZero = 0;
+        let zeroAccuracy = 0;
 
         draws.reverse()
 
@@ -183,15 +214,18 @@ export async function GET() {
             for (const draw of previousDraws) {
                 firstNumbers.unshift(draw.sortedFirstNumber);
             }
-
-            // Calculate comprehensive statistics for each number
             const numberStats = calculateNumberStatistics(firstNumbers);
-
+            console.log(numberStats)
             let currentFirstNumber = currentDraw.sortedFirstNumber
 
             let previousFirstNumber1 = currentDraw.sortedPreviousFirst1
 
             let previousFirstNumber2 = currentDraw.sortedPreviousFirst2
+
+            // Inside the loop where you're making predictions, add this code after the existing comparison
+            if (currentFirstNumber === 0) {
+                totalCorrectIfAlwaysZero++;
+            }
 
             // --- Data Validation ---
             if (currentFirstNumber === undefined || currentFirstNumber === null ||
@@ -238,6 +272,12 @@ export async function GET() {
                 console.warn(`Draw ${currentDraw.index || i}: Prev2=${previousFirstNumber2}, Prev1=${previousFirstNumber1}. Could NOT make prediction (missing state/pair in matrices?). Actual=${currentFirstNumber}`);
             }
         } // End of loop
+
+        // After the prediction loop, calculate the "always zero" accuracy
+        zeroAccuracy = totalPredictionsMade > 0 ? (totalCorrectIfAlwaysZero / totalPredictionsMade) * 100 : 0;
+
+// Add this to your console log summary
+        console.log(`If always guessing 0: ${totalCorrectIfAlwaysZero} correct (${zeroAccuracy.toFixed(2)}%)`);
 
         // --- Results ---
         const accuracy = totalPredictionsMade > 0 ? (totalCorrectPredictions / totalPredictionsMade) * 100 : 0;

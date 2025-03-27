@@ -22,6 +22,7 @@ const getMonths = (n) => {
 // Function to calculate comprehensive statistics about number occurrences
 function calculateNumberStatistics(numbers) {
     const indices = {};
+    const totalNumbers = numbers.length; // Get total count for percentage calculation
     const stats = [];
 
     // First pass: record all indices where each number appears
@@ -34,6 +35,10 @@ function calculateNumberStatistics(numbers) {
 
     // Calculate statistics for each number
     for (const [num, positions] of Object.entries(indices)) {
+        const totalOccurrences = positions.length;
+
+        // Calculate percentage of occurrences
+        const occurrencesPercentage = (totalOccurrences / totalNumbers) * 100;
         // Calculate distances between consecutive occurrences
         const distances = [];
         for (let i = 0; i < positions.length - 1; i++) {
@@ -52,6 +57,7 @@ function calculateNumberStatistics(numbers) {
         stats[num] = {
             totalOccurrences: positions.length,
             timeSinceLastOccurrence: timeSinceLastOccurrence,
+            occurrencesPercentage: occurrencesPercentage.toFixed(2), // Format percentage
             averageWaitTime: averageWaitTime.toFixed(2), // Round to 2 decimal places
             recurrenceDistances: distances.length > 0 ? distances : ["Only occurs once"]
         };
@@ -98,13 +104,29 @@ export async function GET() {
             firstNumbers.push(draw.sortedFirstNumber);
         }
 
+        // --- START: Calculate Percentage for sortedFirstNumber in range 0-1 ---
+        let countInRange = 0;
+        const totalDraws = draws.length; // Get total number of draws for the month
+
+        for (const draw of draws) {
+            // Check if sortedFirstNumber exists and is within the 0-1 range
+            if (typeof draw.sortedFirstNumber === 'number' && draw.sortedFirstNumber >= 0 && draw.sortedFirstNumber <= 1) {
+                countInRange++;
+            }
+        }
+
+        // Calculate percentage, handle division by zero if no draws exist
+        const percentageInRange = totalDraws > 0 ? (countInRange / totalDraws) * 100 : 0;
+        // --- END: Calculation ---
+
         // Calculate comprehensive statistics for each number
         const numberStats = calculateNumberStatistics(firstNumbers);
 
         // Add statistics to the response
         const response = {
             draws: draws,
-            numberStats: numberStats
+            numberStats: numberStats,
+            percentageFirstNumber0to1: percentageInRange.toFixed(2) // Format to 2 decimal places
         };
 
         return new Response(JSON.stringify(response), {
