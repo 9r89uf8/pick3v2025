@@ -196,6 +196,7 @@ export async function GET(req) {
                 sortedPreviousThird8: allDraws[8]?.sortedThirdNumber ?? null,
 
                 // Common fields
+                year: '2025',
                 fireball: currentDraw.fireball,
                 drawDate: currentDraw.dateInfo || null,
                 drawMonth: currentDraw.dateInfo ? currentDraw.dateInfo.substring(0, 3) : null,

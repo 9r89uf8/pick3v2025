@@ -136,6 +136,7 @@ const secondOrderMatrix = {
     // Also, pairs like (4,6), (4,7), (4,8) etc. seem missing. The code will handle this by falling back.
 };
 
+
 // --- Helper Function to find the index (predicted number) with the highest probability ---
 function findHighestProbIndex(probabilities) {
     if (!probabilities || probabilities.length === 0) {

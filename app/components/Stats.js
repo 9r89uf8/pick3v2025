@@ -19,15 +19,15 @@ import { alpha } from '@mui/material/styles';
 
 // --- Your Static Data ---
 const yourStaticData = {
-    0: { occurrencesPercentage: '24.85%', averageWait: '4.02' },
-    1: { occurrencesPercentage: '22.81%', averageWait: '4.25' },
-    2: { occurrencesPercentage: '15.50%', averageWait: '6.48' },
-    3: { occurrencesPercentage: '15.50%', averageWait: '6.48' },
-    4: { occurrencesPercentage: '9.65%', averageWait: '10.06' },
-    5: { occurrencesPercentage: '4.97%', averageWait: '20.31' },
-    6: { occurrencesPercentage: '3.80%', averageWait: '25.25' },
-    7: { occurrencesPercentage: '2.34%', averageWait: '36.43' },
-    8: { occurrencesPercentage: '0.58%', averageWait: '108.00' },
+    0: { occurrencesPercentage: '27.46%', averageWait: '3.65' },
+    1: { occurrencesPercentage: '22.81%', averageWait: '4.39' },
+    2: { occurrencesPercentage: '15.28%', averageWait: '6.56' },
+    3: { occurrencesPercentage: '12.40%', averageWait: '7.95' },
+    4: { occurrencesPercentage: '9.86%', averageWait: '10.06' },
+    5: { occurrencesPercentage: '6.20%', averageWait: '15.85' },
+    6: { occurrencesPercentage: '3.54%', averageWait: '28.00' },
+    7: { occurrencesPercentage: '2.10%', averageWait: '43.50' },
+    8: { occurrencesPercentage: '0.33%', averageWait: '232.50' },
 };
 
 // --- Styled Chip (no changes) ---

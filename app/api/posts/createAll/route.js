@@ -73,6 +73,8 @@ async function processPage(pageNum, currentMonth, previousPicks) {
     const pageData = await scrapePageData(pageNum);
     let draws = [];
 
+    //dateInfo return example: Jan 2, 2024
+
     for (let i = 0; i < pageData.length; i++) {
         const { dateInfo, drawInfo, pick, fireball } = pageData[i];
         if (dateInfo?.substring(0, 3) === currentMonth) {
@@ -201,6 +203,7 @@ async function processPage(pageNum, currentMonth, previousPicks) {
 
                 // Common fields
                 fireball: parsedFireball,
+                year: '2025',
                 drawDate: dateInfo || null,
                 drawMonth: dateInfo ? dateInfo.substring(0, 3) : null,
                 index: r,
@@ -238,9 +241,11 @@ async function writeBatchToFirestore(draws) {
     console.log(`Batch write succeeded for ${draws.length} draws`);
 }
 
+
 export async function GET(req) {
     try {
-        const [prevMonth, currentMonth] = getMonths();
+        // const [prevMonth, currentMonth] = getMonths();
+        let currentMonth = 'Mar'
         console.log('Starting sequential scraping');
 
         let previousPicks = {
@@ -248,14 +253,18 @@ export async function GET(req) {
             original: Array(8).fill([null, null, null])
         };
 
+        // Collect all draws here instead of writing after each page
+        let allDraws = [];
+
+
         // Process pages sequentially
-        for (let pageNum = 9; pageNum >= 1; pageNum--) {
+        for (let pageNum = 6; pageNum >= 1; pageNum--) {
             try {
                 console.log(`Starting to process page ${pageNum}`);
                 const result = await processPage(pageNum, currentMonth, previousPicks);
 
-                // Write the draws to Firestore
-                await writeBatchToFirestore(result.draws);
+                // Add draws to collection instead of writing immediately
+                allDraws = [...allDraws, ...result.draws];
 
                 // Update previous picks for next iteration
                 previousPicks = result.previousPicks;
@@ -264,10 +273,13 @@ export async function GET(req) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (error) {
                 console.error(`Error processing page ${pageNum}:`, error);
-                // Continue with next page even if current page fails
-                continue;
+                // Instead of continue, throw the error to prevent saving
+                throw new Error(`Failed to process page ${pageNum}: ${error.message}`);
             }
         }
+
+        // Only write to Firestore if all pages were processed successfully
+        await writeBatchToFirestore(allDraws);
 
         return new Response(JSON.stringify('good'), {
             status: 200,

@@ -44,6 +44,7 @@ export async function GET() {
         const drawsCollectionRef = adminDb.firestore()
             .collection('draws')
             .where('drawMonth', '==', currentMonth)
+            .where('year', '==', '2025')
             .orderBy('index', 'desc');
 
         const snapshot = await drawsCollectionRef.get();
