@@ -68,14 +68,14 @@ function calculateNumberStatistics(numbers) {
 
 export async function GET() {
     try {
-        const months = getMonths(2); // Get the current month and the previous month
+        const months = getMonths(1); // Get the current month and the previous month
         const firestore = adminDb.firestore();
 
         // Query for the specified months
         const drawsCollection = firestore
             .collection("draws")
             .where('year', '==', '2025')
-            .where("drawMonth", "==", 'Mar');
+            .where("drawMonth", "in", months);
 
         const snapshot = await drawsCollection.get();
         const draws = [];
@@ -105,20 +105,14 @@ export async function GET() {
         for (const draw of draws) {
             firstNumbers.push(draw.sortedFirstNumber);
         }
-        for (const draw of draws) {
-            firstNumbersF.unshift(draw.sortedFirstNumber);
-        }
 
-
-
-        console.log(firstNumbersF)
         // --- START: Calculate Percentage for sortedFirstNumber in range 0-1 ---
         let countInRange = 0;
         const totalDraws = draws.length; // Get total number of draws for the month
 
         for (const draw of draws) {
             // Check if sortedFirstNumber exists and is within the 0-1 range
-            if (typeof draw.sortedFirstNumber === 'number' && draw.sortedFirstNumber >= 0 && draw.sortedFirstNumber <= 1) {
+            if (typeof draw.sortedFirstNumber === 'number' && draw.sortedFirstNumber === 1) {
                 countInRange++;
             }
         }
