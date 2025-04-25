@@ -8,9 +8,13 @@ import {
     Tab,
     Paper,
     alpha,
-    styled, Button
+    styled,
+    Button,
+    Grid,
+    Divider,
+    Chip
 } from '@mui/material';
-import {setDisplayInfo} from "@/app/services/displayService";
+import { setDisplayInfo } from "@/app/services/displayService";
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -29,17 +33,18 @@ const StyledStatCard = styled(Paper)(({ theme }) => ({
     backdropFilter: 'blur(10px)',
     borderRadius: theme.spacing(1),
     border: `1px solid ${alpha('#ffffff', 0.1)}`,
-    marginBottom: theme.spacing(2),
+    height: '100%',
 }));
 
-const StatCard = ({ title, value, total, percentage }) => (
+const StatCard = ({ title, value, total, percentage, color = '#ffc300' }) => (
     <StyledStatCard elevation={0}>
         <Typography
             variant="h6"
             sx={{
-                color: '#ffc300',
+                color: color,
                 mb: 1,
-                fontWeight: 600
+                fontWeight: 600,
+                textAlign: 'center'
             }}
         >
             {title}
@@ -66,9 +71,38 @@ const StatCard = ({ title, value, total, percentage }) => (
     </StyledStatCard>
 );
 
+const DistributionCard = ({ title, distributions, color = '#ffc300' }) => (
+    <StyledStatCard elevation={0}>
+        <Typography
+            variant="h6"
+            sx={{
+                color: color,
+                mb: 2,
+                fontWeight: 600,
+                textAlign: 'center'
+            }}
+        >
+            {title}
+        </Typography>
+        <Grid container spacing={1}>
+            {Object.entries(distributions || {}).map(([pattern, count]) => (
+                <Grid item xs={4} key={pattern}>
+                    <Chip
+                        label={`${pattern}: ${count}`}
+                        sx={{
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            color: 'white',
+                            width: '100%'
+                        }}
+                    />
+                </Grid>
+            ))}
+        </Grid>
+    </StyledStatCard>
+);
+
 const MonthlyStats = ({ data, title }) => {
     if (!data) return null;
-
 
     return (
         <StyledCard elevation={0}>
@@ -84,20 +118,63 @@ const MonthlyStats = ({ data, title }) => {
                 >
                     {title}
                 </Typography>
-                <Box sx={{ mt: 2 }}>
-                    <StatCard
-                        title="Regular Wins"
-                        value={data.totalPassed}
-                        total={data.totalDraws}
-                        percentage={data.percentage}
-                    />
-                    <StatCard
-                        title="Fireball Wins"
-                        value={data.totalFireballPassed}
-                        total={data.totalDraws}
-                        percentage={data.fireballPercentage}
-                    />
-                </Box>
+
+                <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                    Success Rates
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mb: 4 }}>
+                    <Grid item xs={12} md={4}>
+                        <StatCard
+                            title="Regular Pass"
+                            value={data.totalPassed}
+                            total={data.totalDraws}
+                            percentage={data.percentageOriginal}
+                            color="#4caf50"
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <StatCard
+                            title="Fireball Pass"
+                            value={data.totalPassedWithFireball}
+                            total={data.totalDraws}
+                            percentage={data.percentageWithFireball}
+                            color="#ff9800"
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <StatCard
+                            title="Combined"
+                            value={data.totalPassedCombined}
+                            total={data.totalDraws}
+                            percentage={data.percentageCombined}
+                            color="#2196f3"
+                        />
+                    </Grid>
+                </Grid>
+
+                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', my: 3 }} />
+
+                <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                    Distribution Patterns
+                </Typography>
+
+                <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                        <DistributionCard
+                            title="Regular Distributions"
+                            distributions={data.distributions}
+                            color="#4caf50"
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <DistributionCard
+                            title="Fireball Distributions"
+                            distributions={data.fireballDistributions}
+                            color="#ff9800"
+                        />
+                    </Grid>
+                </Grid>
             </CardContent>
         </StyledCard>
     );
@@ -166,10 +243,13 @@ const StatsDisplay = ({ display }) => {
                 sx={{
                     mt: 2,
                     background: 'linear-gradient(to right, #6c757d, #495057)',
-                    color: 'black',
+                    color: 'white',
+                    '&:hover': {
+                        background: 'linear-gradient(to right, #495057, #343a40)',
+                    }
                 }}
             >
-                Update
+                Update Stats
             </Button>
         </Box>
     );

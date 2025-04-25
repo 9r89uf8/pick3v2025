@@ -25,7 +25,7 @@ export const playCombo = async (formData) => {
 export const playStraight = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/unordered',{
+        const response = await fetch('/api/play/original',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -48,7 +48,7 @@ export const checkDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/passTest/one', {
+        const response = await fetch('/api/passTest/unordered', {
             method: 'GET',
             cache: 'no-store'
         });

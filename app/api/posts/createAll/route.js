@@ -245,7 +245,7 @@ async function writeBatchToFirestore(draws) {
 export async function GET(req) {
     try {
         // const [prevMonth, currentMonth] = getMonths();
-        let currentMonth = 'Mar'
+        let currentMonth = 'Apr'
         console.log('Starting sequential scraping');
 
         let previousPicks = {

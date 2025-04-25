@@ -19,6 +19,8 @@ import {
   IconButton,
   ButtonGroup,
   Collapse,
+  Divider,
+  Tooltip,
 } from '@mui/material';
 import { alpha, styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
@@ -62,6 +64,26 @@ const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
   },
 }));
 
+const PermutationToggleButton = styled(ToggleButton)(({ theme }) => ({
+  minWidth: '80px',
+  height: '40px',
+  fontSize: 16,
+  margin: '4px',
+  borderRadius: '8px',
+  color: '#ffffff',
+  border: `1px solid ${alpha('#ffffff', 0.3)}`,
+  '&.Mui-selected': {
+    backgroundColor: alpha('#9f0000', 0.6),
+    color: '#000000',
+    '&:hover': {
+      backgroundColor: alpha('#9f0000', 0.8),
+    },
+  },
+  '&:hover': {
+    backgroundColor: alpha('#ffffff', 0.1),
+  },
+}));
+
 const ExpandButton = styled(IconButton)(({ theme }) => ({
   color: '#ffffff',
   margin: theme.spacing(1),
@@ -81,6 +103,9 @@ const HomePage = () => {
   const [showDashboard, setShowDashboard] = useState(false);
   const [expandSection, setExpandSection] = useState(false);
 
+  // Added state for excluded permutations
+  const [excludedPermutations, setExcludedPermutations] = useState([]);
+
   const [excludedNumbers, setExcludedNumbers] = useState({
     first: [],
     second: [],
@@ -91,7 +116,6 @@ const HomePage = () => {
     const getPosts = async () => {
       await fetchPosts();
       await getDisplayInfo()
-
     };
     getPosts();
   }, []);
@@ -105,16 +129,30 @@ const HomePage = () => {
     }));
   };
 
+  // Handle toggling of permutation patterns
+  const handlePermutationToggle = (pattern) => {
+    setExcludedPermutations(prev =>
+        prev.includes(pattern)
+            ? prev.filter(p => p !== pattern)
+            : [...prev, pattern]
+    );
+  };
+
   const handleCombo = async () => {
     setLoading(true);
-    await playCombo({ excludedNumbers });
-    // await checkDraws();
+    await playCombo({
+      excludedNumbers,
+      excludePermutations: excludedPermutations
+    });
     setLoading(false);
   };
 
   const handleStraight = async () => {
     setLoading(true);
-    await playStraight({ excludedNumbers });
+    await playStraight({
+      excludedNumbers,
+      excludePermutations: excludedPermutations
+    });
     setLoading(false);
   };
 
@@ -122,10 +160,10 @@ const HomePage = () => {
     await checkDraws();
   };
 
-
   const handleClear = () => {
     clearNumbers();
     setExcludedNumbers({ first: [], second: [], third: [] });
+    setExcludedPermutations([]); // Clear excluded permutations too
   };
 
   const renderNumberSelection = (position, numbers, label) => (
@@ -148,6 +186,76 @@ const HomePage = () => {
       </Box>
   );
 
+  // New function to render permutation selection section
+  const renderPermutationSelection = () => (
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+          Exclude Permutations
+        </Typography>
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          <Tooltip title="Lowest, Middle, Highest" arrow>
+            <PermutationToggleButton
+                value="LMH"
+                selected={excludedPermutations.includes("LMH")}
+                onChange={() => handlePermutationToggle("LMH")}
+            >
+              L,M,H
+            </PermutationToggleButton>
+          </Tooltip>
+          <Tooltip title="Lowest, Highest, Middle" arrow>
+            <PermutationToggleButton
+                value="LHM"
+                selected={excludedPermutations.includes("LHM")}
+                onChange={() => handlePermutationToggle("LHM")}
+            >
+              L,H,M
+            </PermutationToggleButton>
+          </Tooltip>
+          <Tooltip title="Middle, Lowest, Highest" arrow>
+            <PermutationToggleButton
+                value="MLH"
+                selected={excludedPermutations.includes("MLH")}
+                onChange={() => handlePermutationToggle("MLH")}
+            >
+              M,L,H
+            </PermutationToggleButton>
+          </Tooltip>
+          <Tooltip title="Middle, Highest, Lowest" arrow>
+            <PermutationToggleButton
+                value="MHL"
+                selected={excludedPermutations.includes("MHL")}
+                onChange={() => handlePermutationToggle("MHL")}
+            >
+              M,H,L
+            </PermutationToggleButton>
+          </Tooltip>
+          <Tooltip title="Highest, Lowest, Middle" arrow>
+            <PermutationToggleButton
+                value="HLM"
+                selected={excludedPermutations.includes("HLM")}
+                onChange={() => handlePermutationToggle("HLM")}
+            >
+              H,L,M
+            </PermutationToggleButton>
+          </Tooltip>
+          <Tooltip title="Highest, Middle, Lowest" arrow>
+            <PermutationToggleButton
+                value="HML"
+                selected={excludedPermutations.includes("HML")}
+                onChange={() => handlePermutationToggle("HML")}
+            >
+              H,M,L
+            </PermutationToggleButton>
+          </Tooltip>
+        </Box>
+      </Box>
+  );
+
   return (
       <Box sx={{ width: '100%' }}>
         <Container maxWidth="sm">
@@ -160,25 +268,14 @@ const HomePage = () => {
               {renderNumberSelection('first', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'First Position')}
               {renderNumberSelection('second', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Second Position')}
               {renderNumberSelection('third', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Third Position')}
+
+              <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', my: 2 }} />
+
+              {/* Add the new permutation selection section */}
+              {renderPermutationSelection()}
             </Stack>
 
             <ButtonGroup variant="contained" aria-label="Basic button group">
-              <Button
-                  variant="contained"
-                  disabled={loading}
-                  size="large"
-                  onClick={handleCombo}
-                  sx={{
-                    mt: 3,
-                    mb: 1,
-                    background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
-                    color: 'black',
-                    minWidth: 200,
-                  }}
-              >
-                Combo
-              </Button>
-
               <Button
                   variant="contained"
                   disabled={loading}
@@ -196,21 +293,21 @@ const HomePage = () => {
               </Button>
             </ButtonGroup>
 
-            <Button
-                variant="contained"
-                disabled={loading}
-                size="large"
-                onClick={handleCheck}
-                sx={{
-                  mt: 3,
-                  mb: 1,
-                  background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
-                  color: 'black',
-                  minWidth: 200,
-                }}
-            >
-              Check
-            </Button>
+            {/*<Button*/}
+            {/*    variant="contained"*/}
+            {/*    disabled={loading}*/}
+            {/*    size="large"*/}
+            {/*    onClick={handleCheck}*/}
+            {/*    sx={{*/}
+            {/*      mt: 3,*/}
+            {/*      mb: 1,*/}
+            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
+            {/*      color: 'black',*/}
+            {/*      minWidth: 200,*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*  Check*/}
+            {/*</Button>*/}
 
             {numbers && numbers.length > 0 && (
                 <Box display="flex" flexDirection="column" alignItems="center">
@@ -232,16 +329,11 @@ const HomePage = () => {
                 </Box>
             )}
 
-
             {display && (
                 <StatsDisplay display={display} />
             )}
 
-
           </Item>
-
-          <ProbabilityTable/>
-
 
           <Box sx={{ textAlign: 'center', mt: 1 }}>
             <ExpandButton
@@ -258,12 +350,8 @@ const HomePage = () => {
             </Item>
           </Collapse>
 
-          <MarkovFirstOrder/>
-          <MarkovSecondOrder/>
-          <Stats draws={recurrence} />
           {posts.length > 0 ? (
               <Box display="flex" flexDirection="column" alignItems="center">
-
                 <List>
                   <DrawsList draws={posts} />
                 </List>

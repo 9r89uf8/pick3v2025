@@ -103,7 +103,7 @@ export async function GET() {
         let firstNumbers = [];
         let firstNumbersF = [];
         for (const draw of draws) {
-            firstNumbers.push(draw.sortedFirstNumber);
+            firstNumbers.push(draw.originalDraw);
         }
 
         // --- START: Calculate Percentage for sortedFirstNumber in range 0-1 ---
@@ -121,13 +121,13 @@ export async function GET() {
         const percentageInRange = totalDraws > 0 ? (countInRange / totalDraws) * 100 : 0;
         // --- END: Calculation ---
 
+        console.log(firstNumbersF);
         // Calculate comprehensive statistics for each number
-        const numberStats = calculateNumberStatistics(firstNumbers);
+        // const numberStats = calculateNumberStatistics(firstNumbers);
 
         // Add statistics to the response
         const response = {
             draws: draws,
-            numberStats: numberStats,
             percentageFirstNumber0to1: percentageInRange.toFixed(2) // Format to 2 decimal places
         };
 

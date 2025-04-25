@@ -3,7 +3,7 @@ import { useStore } from '../store/store'; // Ensure you import the correct stor
 export const setDisplayInfo = async () => {
     const setDisplay = useStore.getState().setDisplay;
     try {
-        const response = await fetch('/api/display/create',{
+        const response = await fetch('/api/display/unordered',{
             method: 'GET',
             cache: 'no-store'
         });
