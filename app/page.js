@@ -103,7 +103,7 @@ const HomePage = () => {
   const [showDashboard, setShowDashboard] = useState(false);
   const [expandSection, setExpandSection] = useState(false);
 
-  // Added state for excluded permutations
+
   const [excludedPermutations, setExcludedPermutations] = useState([]);
 
   const [excludedNumbers, setExcludedNumbers] = useState({
