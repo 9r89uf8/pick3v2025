@@ -48,7 +48,7 @@ export const checkDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/passTest/unordered', {
+        const response = await fetch('/api/test', {
             method: 'GET',
             cache: 'no-store'
         });

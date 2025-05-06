@@ -293,21 +293,21 @@ const HomePage = () => {
               </Button>
             </ButtonGroup>
 
-            {/*<Button*/}
-            {/*    variant="contained"*/}
-            {/*    disabled={loading}*/}
-            {/*    size="large"*/}
-            {/*    onClick={handleCheck}*/}
-            {/*    sx={{*/}
-            {/*      mt: 3,*/}
-            {/*      mb: 1,*/}
-            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
-            {/*      color: 'black',*/}
-            {/*      minWidth: 200,*/}
-            {/*    }}*/}
-            {/*>*/}
-            {/*  Check*/}
-            {/*</Button>*/}
+            <Button
+                variant="contained"
+                disabled={loading}
+                size="large"
+                onClick={handleCheck}
+                sx={{
+                  mt: 3,
+                  mb: 1,
+                  background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
+                  color: 'black',
+                  minWidth: 200,
+                }}
+            >
+              Check
+            </Button>
 
             {numbers && numbers.length > 0 && (
                 <Box display="flex" flexDirection="column" alignItems="center">

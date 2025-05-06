@@ -32,7 +32,7 @@ export async function DELETE() {
 
         const [prevMonth, currentMonth] = getMonths();
         // Get all documents in the 'firstPicks' collection where 'drawMonth' is 'Jul'
-        const picturesSnapshot = await adminDb.firestore().collection('draws').where("year", "==", '2025').where("drawMonth", "==", 'Mar').get();
+        const picturesSnapshot = await adminDb.firestore().collection('draws').where("year", "==", '2025').where("drawMonth", "==", 'Apr').get();
 
         // Create a batch to perform multiple operations
         const batch = adminDb.firestore().batch();

@@ -68,7 +68,7 @@ function calculateNumberStatistics(numbers) {
 
 export async function GET() {
     try {
-        const months = getMonths(1); // Get the current month and the previous month
+        const months = getMonths(2); // Get the current month and the previous month
         const firestore = adminDb.firestore();
 
         // Query for the specified months
