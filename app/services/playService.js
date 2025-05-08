@@ -3,7 +3,7 @@ import { useStore } from '../store/store'; // Ensure you import the correct stor
 export const playCombo = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/newPlayNumbers',{
+        const response = await fetch('/api/play/sortedPlay',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -25,7 +25,7 @@ export const playCombo = async (formData) => {
 export const playStraight = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/original',{
+        const response = await fetch('/api/play/sortedPlay',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),

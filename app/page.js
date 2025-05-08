@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
+import DrawsListSorted from "@/app/components/DrawsListSorted";
 import Stats from "@/app/components/Stats";
 import MarkovSecondOrder from "@/app/components/MarkovSecondOrder";
 import MarkovFirstOrder from "@/app/components/MarkovFirstOrder";
@@ -353,7 +354,7 @@ const HomePage = () => {
           {posts.length > 0 ? (
               <Box display="flex" flexDirection="column" alignItems="center">
                 <List>
-                  <DrawsList draws={posts} />
+                  <DrawsListSorted draws={posts} />
                 </List>
               </Box>
           ) : (
