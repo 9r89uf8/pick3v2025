@@ -4,47 +4,139 @@ import { adminDb } from '@/app/utils/firebaseAdmin';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// --- Helper function to get A/B Distribution ---
+// Assumes numbers are single digits (0-9) if called after validation.
+const getABDistribution = (numbers) => {
+    // This function is called by isDrawPassing. Initial validation (length, isNaN, range) happens in isDrawPassing.
+    if (!Array.isArray(numbers) || numbers.length !== 3) { // Basic check
+        return "INVALID_INPUT_FORMAT";
+    }
+
+    let countB = 0; // Numbers 0-4
+    let countA = 0; // Numbers 5-9
+    for (const num of numbers) {
+        if (isNaN(num)) return "CONTAINS_NAN"; // Should be caught by isDrawPassing
+        if (num >= 0 && num <= 4) countB++;
+        else if (num >= 5 && num <= 9) countA++;
+        else return "NUM_OUT_OF_RANGE"; // e.g. 10, -1. Should be caught by isDrawPassing
+    }
+
+    if (countB + countA !== 3) return "INVALID_COUNTS"; // If numbers were out of range and not caught
+
+    if (countB === 3) return "BBB";
+    if (countB === 2 && countA === 1) return "BBA";
+    if (countB === 1 && countA === 2) return "BAA";
+    if (countA === 3) return "AAA";
+
+    return "UNKNOWN_DIST_LOGIC"; // Should ideally not be reached
+};
+
+// --- New helper function to validate draw based on all rules ---
+// This function expects the 'numbers' array to be numerically sorted.
+const isDrawPassing = (numbers) => {
+    // Validate numbers: must be 3 numbers, each a digit from 0-9
+    if (!Array.isArray(numbers) || numbers.length !== 3 || numbers.some(n => isNaN(n) || n < 0 || n > 9)) {
+        return { passing: false, abPattern: "INVALID_NUMS", reason: "Numbers must be 3 digits (0-9)." };
+    }
+
+    // Rule 1: No repeating numbers
+    const uniqueNumbers = new Set(numbers);
+    if (uniqueNumbers.size !== numbers.length) {
+        // Get A/B pattern even for repeating numbers for display purposes
+        const patternForRepeating = getABDistribution([...numbers]); // Use a copy for getABDistribution
+        return { passing: false, abPattern: patternForRepeating, reason: "REPEATING_NUMBERS" };
+    }
+
+    // At this point, numbers are unique and sorted.
+    const abPattern = getABDistribution(numbers);
+
+    // Rule 2: Distribution must be 'BBA' or 'BAA'
+    if (abPattern !== "BBA" && abPattern !== "BAA") {
+        let reasonText = `DISTRIBUTION_NOT_TARGET (${abPattern})`;
+        if (["AAA", "BBB"].includes(abPattern)) {
+            reasonText = `Non-target distribution: ${abPattern}`;
+        } else if (abPattern === "INVALID_INPUT_FORMAT" || abPattern === "CONTAINS_NAN" || abPattern === "NUM_OUT_OF_RANGE" || abPattern === "UNKNOWN_DIST_LOGIC") {
+            reasonText = `Internal A/B calc issue: ${abPattern}`;
+        }
+        return { passing: false, abPattern: abPattern, reason: reasonText };
+    }
+
+    // Rule 3 & 4: Difference checks for BBA or BAA
+    // 'numbers' array is assumed to be numerically sorted here.
+    // The difference checks are applied to these numerically sorted numbers.
+    if (abPattern === "BBA") {
+        // Difference between the second and first number must be 2 or less
+        if (Math.abs(numbers[1] - numbers[0]) <= 2) {
+            return { passing: true, abPattern: "BBA", reason: "PASS" };
+        } else {
+            return { passing: false, abPattern: "BBA", reason: "BBA_SPREAD_FAIL" };
+        }
+    }
+
+    if (abPattern === "BAA") {
+        // Difference between the third and second number must be 2 or less
+        if (Math.abs(numbers[2] - numbers[1]) <= 2) {
+            return { passing: true, abPattern: "BAA", reason: "PASS" };
+        } else {
+            return { passing: false, abPattern: "BAA", reason: "BAA_SPREAD_FAIL" };
+        }
+    }
+
+    // Fallback, should not be reached if logic is correct
+    return { passing: false, abPattern: (abPattern || "UNKNOWN"), reason: "UNHANDLED_VALIDATION_PATH" };
+};
+
+
 const getMonths = () => {
-    const currentDate = new Date();
-    const currentMonthIndex = currentDate.getMonth();
+    const currentDate = new Date(); // Assuming current date is May 8, 2025
+    const currentMonthIndex = currentDate.getMonth(); // 4 (May)
 
-    let twoMonthsAgoIndex;
-    let previousMonthIndex;
+    const currentYear = currentDate.getFullYear(); // 2025
 
-    if (currentMonthIndex === 0) {
-        twoMonthsAgoIndex = 10; // (Dec -> Oct)
-        previousMonthIndex = 11; // (Dec -> Nov)
-    } else if (currentMonthIndex === 1) {
-        twoMonthsAgoIndex = 11; // (Jan -> Nov)
-        previousMonthIndex = 0;  // (Jan -> Dec)
-    } else {
-        twoMonthsAgoIndex = currentMonthIndex - 2;
-        previousMonthIndex = currentMonthIndex - 1;
+    let previousMonthIndex = currentMonthIndex - 1; // 3 (Apr)
+    let previousMonthYear = currentYear; // 2025
+    if (previousMonthIndex < 0) {
+        previousMonthIndex = 11;
+        previousMonthYear = currentYear - 1;
+    }
+
+    let twoMonthsAgoIndex = currentMonthIndex - 2; // 2 (Mar)
+    let twoMonthsAgoYear = currentYear; // 2025
+    if (twoMonthsAgoIndex < 0) {
+        twoMonthsAgoIndex = 12 + twoMonthsAgoIndex;
+        twoMonthsAgoYear = currentYear -1;
+        if (twoMonthsAgoIndex < 0) { // Should not happen with 12 + index logic here for May
+            twoMonthsAgoIndex = 12 + twoMonthsAgoIndex;
+            twoMonthsAgoYear = currentYear -2;
+        }
     }
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
+
+    return {
+        current: { month: monthNames[currentMonthIndex], year: currentYear.toString() }, // May 2025
+        previous: { month: monthNames[previousMonthIndex], year: previousMonthYear.toString() }, // Apr 2025
+        twoMonthsAgo: { month: monthNames[twoMonthsAgoIndex], year: twoMonthsAgoYear.toString() } // Mar 2025
+    };
 };
 
-function validateThreeDigits(a, b, c) {
-    const firstNumberValid = a <= 2;        // Must be <= 2
-    const secondNumberValid = b >= 3 && b <= 6; // Must be between 3 and 6
-    const thirdNumberValid = c >= 7;        // Must be >= 7
-    const uniqueCheck = (a !== b) && (b !== c) && (a !== c);
-
-    return (firstNumberValid && secondNumberValid && thirdNumberValid && uniqueCheck);
-}
 
 export async function GET() {
     try {
-        const [prevMonth, currentMonth] = getMonths();
-        // const currentMonth = 'Oct'
-        // const prevMonth = 'Sep'
+        const months = getMonths();
+        const currentMonthName = months.current.month;
+        const currentYearStr = months.current.year;
+        const prevMonthName = months.previous.month;
+        const prevMonthYearStr = months.previous.year;
+
+        console.log(`Processing for: ${currentMonthName} ${currentYearStr}`);
+        console.log(`Previous month for stats: ${prevMonthName} ${prevMonthYearStr}`);
+
 
         const drawsCollectionRef = adminDb.firestore()
             .collection('draws')
-            .where('drawMonth', '==', currentMonth)
-            .where('year', '==', '2025')
+            .where('drawMonth', '==', currentMonthName)
+            .where('year', '==', currentYearStr)
             .orderBy('index', 'desc');
 
         const snapshot = await drawsCollectionRef.get();
@@ -58,100 +150,147 @@ export async function GET() {
             });
         });
 
-        let totalCorrectPredictions = 0;
-        let totalFireballPredictions = 0;  // New counter for Fireball predictions
+        let totalPassedNewRules = 0;
+        let totalFireballPassedNewRules = 0;
         let totalDraws = draws.length;
+        let countBBA = 0; // <-- Added counter for BBA
+        let countBAA = 0; // <-- Added counter for BAA
 
-        // Update each draw document with isValid and isValidFireball
+        console.log(`Found ${totalDraws} draws for ${currentMonthName} ${currentYearStr}.`);
+
         for (let i = 0; i < draws.length; i++) {
             const draw = draws[i];
+
+            const sfn = Number(draw.sortedFirstNumber);
+            const ssn = Number(draw.sortedSecondNumber);
+            const stn = Number(draw.sortedThirdNumber);
+            const fb = Number(draw.fireball);
+
+            if (isNaN(sfn) || isNaN(ssn) || isNaN(stn)) {
+                console.warn(`Skipping draw ID ${draw.id} due to invalid main draw numbers.`);
+                const drawRef = adminDb.firestore().collection('draws').doc(draw.id);
+                batch.update(drawRef, {
+                    isValidNewRules: false,
+                    isValidFireballNewRules: false,
+                    validationError: "Invalid main draw numbers"
+                });
+                continue;
+            }
+
+            const mainDrawNumbers = [sfn, ssn, stn];
+
             console.log(
-                `\nValidating draw: ${draw.sortedFirstNumber}, ${draw.sortedSecondNumber}, ${draw.sortedThirdNumber}`
+                `\nValidating draw ID ${draw.id}: ${mainDrawNumbers.join(', ')} (Fireball: ${isNaN(fb) ? 'N/A' : fb})`
             );
 
-            const { sortedFirstNumber, sortedSecondNumber, sortedThirdNumber, fireball } = draw;
+            const mainDrawOutcome = isDrawPassing(mainDrawNumbers);
+            const isValidNewRules = mainDrawOutcome.passing;
 
-            // === Compute isValid (original 3-digit check) ===
-            const isValid = validateThreeDigits(sortedFirstNumber, sortedSecondNumber, sortedThirdNumber);
-            if (isValid) {
-                totalCorrectPredictions++;
-                console.log('Draw passed all validations');
-            } else {
-                console.log('Draw failed validations');
-            }
-
-            // === Compute isValidFireball (Fireball check) ===
-            let isValidFireball = false;
-
-            if (typeof fireball === 'number') {
-                // For each digit replaced by Fireball, sort them, then validate
-                const replacedA = [fireball, sortedSecondNumber, sortedThirdNumber].sort((x, y) => x - y);
-                const replacedB = [sortedFirstNumber, fireball, sortedThirdNumber].sort((x, y) => x - y);
-                const replacedC = [sortedFirstNumber, sortedSecondNumber, fireball].sort((x, y) => x - y);
-
-                const checkA = validateThreeDigits(replacedA[0], replacedA[1], replacedA[2]);
-                const checkB = validateThreeDigits(replacedB[0], replacedB[1], replacedB[2]);
-                const checkC = validateThreeDigits(replacedC[0], replacedC[1], replacedC[2]);
-
-                isValidFireball = checkA || checkB || checkC;
-
-                if (isValidFireball) {
-                    totalFireballPredictions++;
+            if (isValidNewRules) {
+                totalPassedNewRules++;
+                // Increment BBA/BAA counts if the draw passed and matches the pattern
+                if (mainDrawOutcome.abPattern === "BBA") {
+                    countBBA++;
+                } else if (mainDrawOutcome.abPattern === "BAA") {
+                    countBAA++;
                 }
+                console.log(`Draw ID ${draw.id} PASSED new rules. Reason: ${mainDrawOutcome.reason}, A/B: ${mainDrawOutcome.abPattern}`);
+            } else {
+                console.log(`Draw ID ${draw.id} FAILED new rules. Reason: ${mainDrawOutcome.reason}, A/B: ${mainDrawOutcome.abPattern}`);
             }
 
-            // Update the draw document in Firestore
+            let isValidFireballNewRules = false;
+            if (!isNaN(fb) && fb >= 0 && fb <= 9) {
+                const substitutions = [
+                    [fb, ssn, stn],
+                    [sfn, fb, stn],
+                    [sfn, ssn, fb]
+                ];
+
+                for (let j = 0; j < substitutions.length; j++) {
+                    const tempSub = [...substitutions[j]];
+                    tempSub.sort((a, b) => a - b);
+
+                    const fireballSubOutcome = isDrawPassing(tempSub);
+                    if (fireballSubOutcome.passing) {
+                        isValidFireballNewRules = true;
+                        console.log(`Draw ID ${draw.id} - Fireball substitution [${substitutions[j].join(',')}] (sorted: [${tempSub.join(',')}]) PASSED. Reason: ${fireballSubOutcome.reason}, A/B: ${fireballSubOutcome.abPattern}`);
+                        break;
+                    } else {
+                        console.log(`Draw ID ${draw.id} - Fireball substitution [${substitutions[j].join(',')}] (sorted: [${tempSub.join(',')}]) FAILED. Reason: ${fireballSubOutcome.reason}, A/B: ${fireballSubOutcome.abPattern}`);
+                    }
+                }
+            } else {
+                console.log(`Draw ID ${draw.id} - Fireball number is invalid or missing.`);
+            }
+
+            if (isValidFireballNewRules) {
+                totalFireballPassedNewRules++;
+            }
+
             const drawRef = adminDb.firestore().collection('draws').doc(draw.id);
             batch.update(drawRef, {
-                isValid,
-                isValidFireball
+                isValidNewRules: isValidNewRules,
+                isValidFireballNewRules: isValidFireballNewRules,
+                newRulesABPattern: mainDrawOutcome.abPattern,
+                newRulesReason: mainDrawOutcome.reason,
+                validationError: null
             });
         }
 
-        // Create or update stats document for the current month
-        const statsRef = adminDb.firestore().collection('drawStats').doc(currentMonth);
+        const currentStatsDocId = `${currentMonthName}-${currentYearStr}`;
+        const statsRef = adminDb.firestore().collection('drawStats').doc(currentStatsDocId);
+
+        const percentageNewRules = totalDraws > 0 ? (totalPassedNewRules / totalDraws) * 100 : 0;
+        const fireballPercentageNewRules = totalDraws > 0 ? (totalFireballPassedNewRules / totalDraws) * 100 : 0;
+
         batch.set(statsRef, {
-            month: currentMonth,
+            monthYear: currentStatsDocId,
+            month: currentMonthName,
+            year: currentYearStr,
             totalDraws,
-            totalPassed: totalCorrectPredictions,
-            totalFireballPassed: totalFireballPredictions,  // New stat
-            percentage: (totalCorrectPredictions / totalDraws) * 100,
-            fireballPercentage: (totalFireballPredictions / totalDraws) * 100,  // New percentage
+            totalPassedNewRules: totalPassedNewRules,
+            totalFireballPassedNewRules: totalFireballPassedNewRules,
+            percentageNewRules: percentageNewRules,
+            fireballPercentageNewRules: fireballPercentageNewRules,
+            countBBA: countBBA, // <-- Store BBA count
+            countBAA: countBAA, // <-- Store BAA count
             lastUpdated: adminDb.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
         await batch.commit();
+        console.log(`Batch commit successful for ${currentMonthName} ${currentYearStr}.`);
 
-        // Read current & previous month stats
         const statsCollection = adminDb.firestore().collection('drawStats');
 
-        const currentDoc = await statsCollection.doc(currentMonth).get();
+        const currentDoc = await statsCollection.doc(currentStatsDocId).get();
         let currentData = currentDoc.exists ? currentDoc.data() : null;
 
-        const prevDoc = await statsCollection.doc(prevMonth).get();
+        const previousStatsDocId = `${prevMonthName}-${prevMonthYearStr}`;
+        const prevDoc = await statsCollection.doc(previousStatsDocId).get();
         let prevData = prevDoc.exists ? prevDoc.data() : null;
 
         const responsePayload = {
-            currentMonth: currentData
-                ? {
-                    month: currentData.month,
-                    totalDraws: currentData.totalDraws,
-                    totalPassed: currentData.totalPassed,
-                    totalFireballPassed: currentData.totalFireballPassed,  // Include in response
-                    percentage: currentData.percentage,
-                    fireballPercentage: currentData.fireballPercentage,    // Include in response
-                }
-                : null,
-            previousMonth: prevData
-                ? {
-                    month: prevData.month,
-                    totalDraws: prevData.totalDraws,
-                    totalPassed: prevData.totalPassed,
-                    totalFireballPassed: prevData.totalFireballPassed,     // Include in response
-                    percentage: prevData.percentage,
-                    fireballPercentage: prevData.fireballPercentage,       // Include in response
-                }
-                : null,
+            currentMonthStats: currentData ? {
+                monthYear: currentData.monthYear,
+                totalDraws: currentData.totalDraws,
+                totalPassed: currentData.totalPassedNewRules,
+                totalFireballPassed: currentData.totalFireballPassedNewRules,
+                percentage: currentData.percentageNewRules,
+                fireballPercentage: currentData.fireballPercentageNewRules,
+                countBBA: currentData.countBBA !== undefined ? currentData.countBBA : 0, // <-- Return BBA count
+                countBAA: currentData.countBAA !== undefined ? currentData.countBAA : 0  // <-- Return BAA count
+            } : null,
+            previousMonthStats: prevData ? {
+                monthYear: prevData.monthYear,
+                totalDraws: prevData.totalDraws,
+                totalPassed: prevData.totalPassedNewRules,
+                totalFireballPassed: prevData.totalFireballPassedNewRules,
+                percentage: prevData.percentageNewRules,
+                fireballPercentage: prevData.fireballPercentageNewRules,
+                countBBA: prevData.countBBA !== undefined ? prevData.countBBA : 0, // <-- Return BBA count for prev month
+                countBAA: prevData.countBAA !== undefined ? prevData.countBAA : 0  // <-- Return BAA count for prev month
+            } : null,
         };
 
         return new Response(JSON.stringify(responsePayload), {
@@ -162,8 +301,8 @@ export async function GET() {
             },
         });
     } catch (error) {
-        console.log(error.message);
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error("Error in GET /api/posts:", error);
+        return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });

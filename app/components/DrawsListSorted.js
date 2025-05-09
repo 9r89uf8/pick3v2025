@@ -8,7 +8,7 @@ import {
     Chip,
     styled,
     Tooltip,
-    useTheme // Import useTheme to access theme properties directly if needed for sx props
+    useTheme
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Today, AccessTime } from '@mui/icons-material';
@@ -72,7 +72,6 @@ const StatusChip = styled(Chip, {
 }));
 
 // PatternChip is no longer used for L/M/H, but keeping definition if used elsewhere or for future.
-// If it's confirmed to be unused, it can be removed.
 const PatternChip = styled(Chip)(({ theme }) => ({
     backgroundColor: alpha(theme.palette.info.dark, 0.8),
     color: theme.palette.common.white,
@@ -111,7 +110,6 @@ const FireballBox = styled(Box)(({ theme }) => ({
 // --- Helper function to get L/M/H Pattern (based on original positions) ---
 // This function is no longer called by the DrawList component's rendering logic
 // but is kept here as it might be a general utility.
-// If confirmed unused across the project, it could be removed.
 const getLmhPattern = (rawNumbers) => {
     if (!Array.isArray(rawNumbers) || rawNumbers.length !== 3 || rawNumbers.some(isNaN)) {
         return "INVALID_DATA";
@@ -122,7 +120,7 @@ const getLmhPattern = (rawNumbers) => {
     }
     const indexedNums = rawNumbers.map((value, originalIndex) => ({ value, originalIndex }));
     const sortedNums = [...indexedNums].sort((a, b) => a.value - b.value);
-    let patternArray = ['', '', '']; // This is the internal 'patternArray'
+    let patternArray = ['', '', ''];
     patternArray[sortedNums[0].originalIndex] = 'L';
     patternArray[sortedNums[1].originalIndex] = 'M';
     patternArray[sortedNums[2].originalIndex] = 'H';
@@ -134,92 +132,143 @@ const getLmhPattern = (rawNumbers) => {
 };
 
 // --- Helper function to get A/B Distribution ---
+// Assumes numbers are single digits (0-9) if called after validation.
 const getABDistribution = (numbers) => {
-    if (!Array.isArray(numbers) || numbers.length !== 3 || numbers.some(isNaN)) {
-        return "INVALID_INPUT";
+    // This function is called by isDrawPassing. Initial validation (length, isNaN, range) happens in isDrawPassing.
+    if (!Array.isArray(numbers) || numbers.length !== 3) { // Basic check
+        return "INVALID_INPUT_FORMAT";
     }
-    if (new Set(numbers).size !== 3) {
-        return "REPEATING";
-    }
+
     let countB = 0; // Numbers 0-4
     let countA = 0; // Numbers 5-9
     for (const num of numbers) {
+        if (isNaN(num)) return "CONTAINS_NAN"; // Should be caught by isDrawPassing
         if (num >= 0 && num <= 4) countB++;
         else if (num >= 5 && num <= 9) countA++;
-        else return "OUT_OF_RANGE";
+        else return "NUM_OUT_OF_RANGE"; // e.g. 10, -1. Should be caught by isDrawPassing
     }
+
+    if (countB + countA !== 3) return "INVALID_COUNTS"; // If numbers were out of range and not caught
+
     if (countB === 3) return "BBB";
     if (countB === 2 && countA === 1) return "BBA";
     if (countB === 1 && countA === 2) return "BAA";
     if (countA === 3) return "AAA";
-    return "UNKNOWN_DIST";
+
+    return "UNKNOWN_DIST_LOGIC"; // Should ideally not be reached
+};
+
+// --- New helper function to validate draw based on all rules ---
+const isDrawPassing = (numbers) => {
+    // Validate numbers: must be 3 numbers, each a digit from 0-9
+    if (!Array.isArray(numbers) || numbers.length !== 3 || numbers.some(n => isNaN(n) || n < 0 || n > 9)) {
+        return { passing: false, abPattern: "INVALID_NUMS", reason: "Numbers must be 3 digits (0-9)." };
+    }
+
+    // Rule 1: No repeating numbers
+    const uniqueNumbers = new Set(numbers);
+    if (uniqueNumbers.size !== numbers.length) {
+        // Get A/B pattern even for repeating numbers for display purposes
+        const patternForRepeating = getABDistribution([...numbers]);
+        return { passing: false, abPattern: patternForRepeating, reason: "REPEATING_NUMBERS" };
+    }
+
+    const abPattern = getABDistribution(numbers);
+
+    // Rule 2: Distribution must be 'BBA' or 'BAA'
+    if (abPattern !== "BBA" && abPattern !== "BAA") {
+        // Handle specific non-target patterns or errors from getABDistribution
+        let reasonText = `DISTRIBUTION_NOT_TARGET (${abPattern})`;
+        if (["AAA", "BBB"].includes(abPattern)) {
+            reasonText = `Non-target distribution: ${abPattern}`;
+        } else if (abPattern === "INVALID_INPUT_FORMAT" || abPattern === "CONTAINS_NAN" || abPattern === "NUM_OUT_OF_RANGE" || abPattern === "UNKNOWN_DIST_LOGIC") {
+            reasonText = `Internal A/B calc issue: ${abPattern}`;
+        }
+        return { passing: false, abPattern: abPattern, reason: reasonText };
+    }
+
+    // Rule 3 & 4: Difference checks for BBA or BAA
+    // The numbers are already sorted as per `sortedDrawNumbers`
+    if (abPattern === "BBA") {
+        // Difference between the second and first number must be 2 or less
+        if (Math.abs(numbers[1] - numbers[0]) <= 2) {
+            return { passing: true, abPattern: "BBA", reason: "PASS" };
+        } else {
+            return { passing: false, abPattern: "BBA", reason: "BBA_SPREAD_FAIL" };
+        }
+    }
+
+    if (abPattern === "BAA") {
+        // Difference between the third and second number must be 2 or less
+        if (Math.abs(numbers[2] - numbers[1]) <= 2) {
+            return { passing: true, abPattern: "BAA", reason: "PASS" };
+        } else {
+            return { passing: false, abPattern: "BAA", reason: "BAA_SPREAD_FAIL" };
+        }
+    }
+
+    // Fallback, should not be reached if logic is correct and exhaustive
+    return { passing: false, abPattern: (abPattern || "UNKNOWN"), reason: "UNHANDLED_VALIDATION_PATH" };
 };
 
 
 const DrawListSorted = ({ draws }) => {
-    const theme = useTheme(); // For accessing theme properties in sx props
+    const theme = useTheme();
 
     return (
         <Grid container spacing={3} sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
             {draws?.slice(0, 200).map((item, index) => {
+                // Ensure numbers are parsed and are actual numbers, filter out NaNs early.
+                // The problem states "sortedFirstNumber", etc. implying they are already sorted.
                 const sortedDrawNumbers = [
                     Number(item.sortedFirstNumber),
                     Number(item.sortedSecondNumber),
                     Number(item.sortedThirdNumber),
-                ].filter(n => !isNaN(n));
+                ].filter(n => !isNaN(n)); // Keep this filter for safety
 
                 const fireballNumber = Number(item.fireball);
 
+                // If, after filtering NaNs, we don't have 3 numbers, it's invalid for processing.
                 if (sortedDrawNumbers.length !== 3) {
-                    console.warn(`Skipping draw item (ID: ${item.drawId || 'N/A'}) due to missing/invalid sorted numbers.`);
+                    console.warn(`Skipping draw item (ID: ${item.drawId || 'N/A'}) due to insufficient valid sorted numbers. Found: ${sortedDrawNumbers.length}`);
                     return (
                         <Grid item xs={12} sm={6} md={4} key={item.drawId || index}>
                             <StyledCard>
-                                <CardContent><Typography color="error">Invalid draw data</Typography></CardContent>
+                                <CardContent><Typography color="error">Invalid draw data: Not enough numbers.</Typography></CardContent>
                             </StyledCard>
                         </Grid>
                     );
                 }
 
-                const isSortedDrawUnique = new Set(sortedDrawNumbers).size === 3;
-                let mainDrawABPattern = "N/A";
-                let isMainDrawBBAorBAA = false;
-
-                if (isSortedDrawUnique) {
-                    mainDrawABPattern = getABDistribution(sortedDrawNumbers);
-                    isMainDrawBBAorBAA = mainDrawABPattern === "BBA" || mainDrawABPattern === "BAA";
-                } else {
-                    mainDrawABPattern = "REPEATING";
-                }
-
-                // L/M/H pattern for original draw is no longer calculated or displayed.
+                // Perform the comprehensive validation for the main draw
+                const mainDrawValidation = isDrawPassing(sortedDrawNumbers);
 
                 const fireballSubResults = [];
-                const hasValidFireball = !isNaN(fireballNumber);
+                const hasValidFireball = !isNaN(fireballNumber) && fireballNumber >=0 && fireballNumber <=9;
 
                 if (hasValidFireball) {
                     for (let i = 0; i < 3; i++) {
                         const tempSub = [...sortedDrawNumbers];
                         tempSub[i] = fireballNumber;
+                        // IMPORTANT: The problem implies the original numbers `sortedDrawNumbers` are already sorted.
+                        // When substituting with fireball, the resulting `tempSub` might NOT be sorted.
+                        // The rules "difference between the second and first" or "third and second"
+                        // usually apply to numbers in their sorted order.
+                        // If `tempSub` needs to be re-sorted before applying BBA/BAA diff rules, add:
+                        // tempSub.sort((a, b) => a - b);
+                        // For now, assuming rules apply to the numbers *as they are* in the BBA/BAA sequence,
+                        // and `sortedDrawNumbers` defines that initial sequence order.
+                        // The problem statement says "the difference between the second and first number... if distribution is 'BBA'"
+                        // This implies the numbers are already in an order that forms BBA.
+                        // Let's assume `sortedDrawNumbers` is the sequence to check.
 
-                        const isSubUnique = new Set(tempSub).size === 3;
-                        let subABPattern = "N/A";
-                        let isSubBBAorBAA = false;
-                        // subLmhPattern is no longer calculated
+                        const subValidationOutcome = isDrawPassing(tempSub); // tempSub might not be sorted
 
-                        if (isSubUnique) {
-                            subABPattern = getABDistribution(tempSub);
-                            isSubBBAorBAA = subABPattern === "BBA" || subABPattern === "BAA";
-                        } else {
-                            subABPattern = "REPEATING";
-                        }
                         fireballSubResults.push({
                             substitutedNumbersDisplay: `[${tempSub.join(', ')}]`,
                             originalIndexReplaced: i,
-                            isUnique: isSubUnique,
-                            abPattern: subABPattern,
-                            isBBAorBAA: isSubBBAorBAA,
-                            // lmhPattern property removed
+                            // Store the whole validation object
+                            validationOutcome: subValidationOutcome,
                         });
                     }
                 }
@@ -249,32 +298,18 @@ const DrawListSorted = ({ draws }) => {
                                 </Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mb: 1 }}>
-                                        <Tooltip title="Sorted draw: Uniqueness status" arrow>
-                                            <StatusChip
-                                                label={isSortedDrawUnique ? 'UNIQUE' : 'REPEATING'}
-                                                isvalidprop={isSortedDrawUnique}
-                                            />
-                                        </Tooltip>
+                                    {/* Main Draw Status */}
+                                    <Tooltip
+                                        title={`Main Draw: ${mainDrawValidation.reason} (A/B: ${mainDrawValidation.abPattern})`}
+                                        arrow
+                                    >
+                                        <StatusChip
+                                            label={mainDrawValidation.passing ? 'PASS' : 'FAIL'}
+                                            isvalidprop={mainDrawValidation.passing}
+                                        />
+                                    </Tooltip>
 
-                                        {isSortedDrawUnique && (
-                                            <Tooltip title={`Sorted draw: A/B Distribution (${mainDrawABPattern})`} arrow>
-                                                <Chip
-                                                    label={`A/B: ${mainDrawABPattern}`}
-                                                    color={isMainDrawBBAorBAA ? 'primary' : 'default'}
-                                                    sx={{
-                                                        fontWeight: isMainDrawBBAorBAA ? 700 : 500,
-                                                        border: isMainDrawBBAorBAA ? `2px solid ${theme.palette.primary.light}`: 'none'
-                                                    }}
-                                                />
-                                            </Tooltip>
-                                        )}
-                                        {isSortedDrawUnique && isMainDrawBBAorBAA && (
-                                            <Chip label="Target A/B" color="success" size="small" variant="filled" />
-                                        )}
-
-                                        {/* L/M/H (Orig) PatternChip removed */}
-                                    </Box>
+                                    {/* L/M/H (Orig) PatternChip removed as per original comments */}
 
                                     {hasValidFireball && fireballSubResults.length > 0 && (
                                         <Box sx={{ mt: 1.5, width: '100%', px:1 }}>
@@ -282,24 +317,37 @@ const DrawListSorted = ({ draws }) => {
                                                 Fireball Substitution Results
                                             </Typography>
                                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                                {fireballSubResults.map((fbSub, idx) => (
-                                                    <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '95%', maxWidth: '300px', gap: 0.5 }}>
-                                                        <Tooltip title={`Fireball (${fireballNumber}) replaces number at original sorted position ${fbSub.originalIndexReplaced + 1}. Substituted set: ${fbSub.substitutedNumbersDisplay}`} arrow placement="left">
-                                                            <Typography variant="caption" sx={{ color: alpha('#ffffff', 0.9), mr: 0.5, whiteSpace: 'nowrap' }}>
-                                                                Pos {fbSub.originalIndexReplaced + 1}➔FB:
-                                                            </Typography>
-                                                        </Tooltip>
-                                                        <Chip
-                                                            label={fbSub.isUnique ? fbSub.abPattern : 'REPEATING'} // Only A/B pattern or REPEATING
-                                                            color={!fbSub.isUnique ? 'warning' : (fbSub.isBBAorBAA ? 'success' : 'default')}
-                                                            size="small"
-                                                            sx={{ flexGrow: 1, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis'} }}
-                                                        />
-                                                        {fbSub.isUnique && fbSub.isBBAorBAA && (
-                                                            <Chip label="Target" color="success" size="small" variant="outlined" sx={{ml: 0.5}} />
-                                                        )}
-                                                    </Box>
-                                                ))}
+                                                {fireballSubResults.map((fbSub, idx) => {
+                                                    const { validationOutcome } = fbSub;
+                                                    let chipLabel = validationOutcome.abPattern;
+                                                    if (!validationOutcome.passing) {
+                                                        // For failed cases, the reason might be more informative
+                                                        chipLabel = validationOutcome.reason;
+                                                    }
+
+                                                    return (
+                                                        <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '95%', maxWidth: '320px', gap: 0.5 }}>
+                                                            <Tooltip
+                                                                title={`FB (${fireballNumber}) replaces original number at sorted position ${fbSub.originalIndexReplaced + 1}. Result: ${fbSub.substitutedNumbersDisplay}. Status: ${validationOutcome.reason}`}
+                                                                arrow
+                                                                placement="left"
+                                                            >
+                                                                <Typography variant="caption" sx={{ color: alpha('#ffffff', 0.9), mr: 0.5, whiteSpace: 'nowrap' }}>
+                                                                    Pos {fbSub.originalIndexReplaced + 1}➔FB:
+                                                                </Typography>
+                                                            </Tooltip>
+                                                            <Chip
+                                                                label={chipLabel}
+                                                                color={validationOutcome.passing ? 'success' : 'warning'}
+                                                                size="small"
+                                                                sx={{ flexGrow: 1, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis'} }}
+                                                            />
+                                                            {validationOutcome.passing && (
+                                                                <Chip label="PASS" color="success" size="small" variant="outlined" sx={{ml: 0.5}} />
+                                                            )}
+                                                        </Box>
+                                                    );
+                                                })}
                                             </Box>
                                         </Box>
                                     )}
@@ -329,3 +377,4 @@ const DrawListSorted = ({ draws }) => {
 };
 
 export default DrawListSorted;
+

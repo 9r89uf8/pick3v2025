@@ -5,8 +5,46 @@ import { adminDb } from '@/app/utils/firebaseAdmin';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const getMonths = () => {
+    const currentDate = new Date(); // Assuming current date is May 8, 2025
+    const currentMonthIndex = currentDate.getMonth(); // 4 (May)
+
+    const currentYear = currentDate.getFullYear(); // 2025
+
+    let previousMonthIndex = currentMonthIndex - 1; // 3 (Apr)
+    let previousMonthYear = currentYear; // 2025
+    if (previousMonthIndex < 0) {
+        previousMonthIndex = 11;
+        previousMonthYear = currentYear - 1;
+    }
+
+    let twoMonthsAgoIndex = currentMonthIndex - 2; // 2 (Mar)
+    let twoMonthsAgoYear = currentYear; // 2025
+    if (twoMonthsAgoIndex < 0) {
+        twoMonthsAgoIndex = 12 + twoMonthsAgoIndex;
+        twoMonthsAgoYear = currentYear -1;
+        if (twoMonthsAgoIndex < 0) { // Should not happen with 12 + index logic here for May
+            twoMonthsAgoIndex = 12 + twoMonthsAgoIndex;
+            twoMonthsAgoYear = currentYear -2;
+        }
+    }
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    return {
+        current: { month: monthNames[currentMonthIndex], year: currentYear.toString() }, // May 2025
+        previous: { month: monthNames[previousMonthIndex], year: previousMonthYear.toString() }, // Apr 2025
+        twoMonthsAgo: { month: monthNames[twoMonthsAgoIndex], year: twoMonthsAgoYear.toString() } // Mar 2025
+    };
+};
+
 export async function GET() {
     try {
+        const months = getMonths();
+        const currentMonthName = months.current.month;
+        const currentYearStr = months.current.year;
+        const prevMonthName = months.previous.month;
+        const prevMonthYearStr = months.previous.year;
         const firestore = adminDb.firestore();
 
         // Get the current month's short name (e.g., "Jan", "Feb", "Mar", etc.)
@@ -22,11 +60,13 @@ export async function GET() {
         const previousMonth = monthNames[prevMonthIndex];
 
         // Fetch current month stats
-        const currentMonthRef = firestore.collection('drawStats').doc(currentMonth);
+        const currentStatsDocId = `${currentMonthName}-${currentYearStr}`;
+        const currentMonthRef = firestore.collection('drawStats').doc(currentStatsDocId);
         const currentSnap = await currentMonthRef.get();
 
         // Fetch previous month stats
-        const previousMonthRef = firestore.collection('drawStats').doc(previousMonth);
+        const previousStatsDocId = `${prevMonthName}-${prevMonthYearStr}`;
+        const previousMonthRef = firestore.collection('drawStats').doc(previousStatsDocId);
         const previousSnap = await previousMonthRef.get();
 
         // If current month doc doesn't exist, throw an error or handle accordingly
@@ -42,12 +82,27 @@ export async function GET() {
 
         // Build the response object
         const responseData = {
-            currentMonth: {
-                month: currentMonth,
-                ...currentSnap.data(),
+            currentMonthStats: {
+                monthYear: currentSnap.data().monthYear,
+                totalDraws: currentSnap.data().totalDraws,
+                totalPassed: currentSnap.data().totalPassedNewRules,
+                totalFireballPassed: currentSnap.data().totalFireballPassedNewRules,
+                percentage: currentSnap.data().percentageNewRules,
+                fireballPercentage: currentSnap.data().fireballPercentageNewRules,
+                countBBA: currentSnap.data().countBBA !== undefined ? currentSnap.data().countBBA : 0, // <-- Return BBA count
+                countBAA: currentSnap.data().countBAA !== undefined ? currentSnap.data().countBAA : 0  // <-- Return BAA count
             },
-            previousMonth: previousSnap.exists
-                ? { month: previousMonth, ...previousSnap.data() }
+            previousMonthStats: previousSnap.exists
+                ? {
+                    monthYear: previousSnap.data().monthYear,
+                    totalDraws: previousSnap.data().totalDraws,
+                    totalPassed: previousSnap.data().totalPassedNewRules,
+                    totalFireballPassed: previousSnap.data().totalFireballPassedNewRules,
+                    percentage: previousSnap.data().percentageNewRules,
+                    fireballPercentage: previousSnap.data().fireballPercentageNewRules,
+                    countBBA: previousSnap.data().countBBA !== undefined ? previousSnap.data().countBBA : 0, // <-- Return BBA count for prev month
+                    countBAA: previousSnap.data().countBAA !== undefined ? previousSnap.data().countBAA : 0  // <-- Return BAA count for prev month
+            }
                 : null,
         };
 

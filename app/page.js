@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
 import DrawsListSorted from "@/app/components/DrawsListSorted";
+import PlayComboInfo from "@/app/components/PlayComboInfo";
 import Stats from "@/app/components/Stats";
 import MarkovSecondOrder from "@/app/components/MarkovSecondOrder";
 import MarkovFirstOrder from "@/app/components/MarkovFirstOrder";
@@ -260,81 +261,83 @@ const HomePage = () => {
   return (
       <Box sx={{ width: '100%' }}>
         <Container maxWidth="sm">
-          <Item elevation={4}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#ffc300' }}>
-              Select Numbers to Exclude
-            </Typography>
+          {/*<Item elevation={4}>*/}
+          {/*  <Typography variant="h6" sx={{ mb: 2, color: '#ffc300' }}>*/}
+          {/*    Select Numbers to Exclude*/}
+          {/*  </Typography>*/}
 
-            <Stack spacing={3}>
-              {renderNumberSelection('first', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'First Position')}
-              {renderNumberSelection('second', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Second Position')}
-              {renderNumberSelection('third', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Third Position')}
+          {/*  <Stack spacing={3}>*/}
+          {/*    {renderNumberSelection('first', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'First Position')}*/}
+          {/*    {renderNumberSelection('second', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Second Position')}*/}
+          {/*    {renderNumberSelection('third', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Third Position')}*/}
 
-              <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', my: 2 }} />
+          {/*    <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', my: 2 }} />*/}
 
-              {/* Add the new permutation selection section */}
-              {renderPermutationSelection()}
-            </Stack>
+          {/*    /!* Add the new permutation selection section *!/*/}
+          {/*    {renderPermutationSelection()}*/}
+          {/*  </Stack>*/}
 
-            <ButtonGroup variant="contained" aria-label="Basic button group">
-              <Button
-                  variant="contained"
-                  disabled={loading}
-                  size="large"
-                  onClick={handleStraight}
-                  sx={{
-                    mt: 3,
-                    mb: 1,
-                    background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
-                    color: 'black',
-                    minWidth: 200,
-                  }}
-              >
-                Straight
-              </Button>
-            </ButtonGroup>
+          {/*  <ButtonGroup variant="contained" aria-label="Basic button group">*/}
+          {/*    <Button*/}
+          {/*        variant="contained"*/}
+          {/*        disabled={loading}*/}
+          {/*        size="large"*/}
+          {/*        onClick={handleStraight}*/}
+          {/*        sx={{*/}
+          {/*          mt: 3,*/}
+          {/*          mb: 1,*/}
+          {/*          background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
+          {/*          color: 'black',*/}
+          {/*          minWidth: 200,*/}
+          {/*        }}*/}
+          {/*    >*/}
+          {/*      Straight*/}
+          {/*    </Button>*/}
+          {/*  </ButtonGroup>*/}
 
-            <Button
-                variant="contained"
-                disabled={loading}
-                size="large"
-                onClick={handleCheck}
-                sx={{
-                  mt: 3,
-                  mb: 1,
-                  background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',
-                  color: 'black',
-                  minWidth: 200,
-                }}
-            >
-              Check
-            </Button>
+          {/*  <Button*/}
+          {/*      variant="contained"*/}
+          {/*      disabled={loading}*/}
+          {/*      size="large"*/}
+          {/*      onClick={handleCheck}*/}
+          {/*      sx={{*/}
+          {/*        mt: 3,*/}
+          {/*        mb: 1,*/}
+          {/*        background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
+          {/*        color: 'black',*/}
+          {/*        minWidth: 200,*/}
+          {/*      }}*/}
+          {/*  >*/}
+          {/*    Check*/}
+          {/*  </Button>*/}
 
-            {numbers && numbers.length > 0 && (
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Button
-                      variant="contained"
-                      size="large"
-                      onClick={handleClear}
-                      sx={{
-                        mt: 2,
-                        background: 'linear-gradient(to right, #ef233c, #d90429)',
-                        color: 'black',
-                      }}
-                  >
-                    Clear
-                  </Button>
-                  <List>
-                    <NumbersList combinations={numbers} />
-                  </List>
-                </Box>
-            )}
+          {/*  {numbers && numbers.length > 0 && (*/}
+          {/*      <Box display="flex" flexDirection="column" alignItems="center">*/}
+          {/*        <Button*/}
+          {/*            variant="contained"*/}
+          {/*            size="large"*/}
+          {/*            onClick={handleClear}*/}
+          {/*            sx={{*/}
+          {/*              mt: 2,*/}
+          {/*              background: 'linear-gradient(to right, #ef233c, #d90429)',*/}
+          {/*              color: 'black',*/}
+          {/*            }}*/}
+          {/*        >*/}
+          {/*          Clear*/}
+          {/*        </Button>*/}
+          {/*        <List>*/}
+          {/*          <NumbersList combinations={numbers} />*/}
+          {/*        </List>*/}
+          {/*      </Box>*/}
+          {/*  )}*/}
 
-            {display && (
-                <StatsDisplay display={display} />
-            )}
 
-          </Item>
+
+          {/*</Item>*/}
+          <PlayComboInfo/>
+          {display && (
+              <StatsDisplay display={display} />
+          )}
 
           <Box sx={{ textAlign: 'center', mt: 1 }}>
             <ExpandButton
