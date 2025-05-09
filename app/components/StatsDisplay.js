@@ -95,6 +95,16 @@ const DistributionCountCard = ({ title, count, color = '#80deea' }) => (
         >
             {count !== undefined ? count : 'N/A'}
         </Typography>
+        <Typography
+            variant="subtitle1" // Using subtitle1 for a slightly smaller heading than StatCard
+            sx={{
+                color: 'white',
+                mb: 1,
+                fontWeight: 600,
+            }}
+        >
+            35 total possible combinations
+        </Typography>
     </StyledStatCard>
 );
 
