@@ -2,11 +2,19 @@
   "crons": [
     {
       "path": "/api/aws/single",
-      "schedule": "0 19 * * *"
+      "schedule": "15 18 * * *"
+    },
+    {
+      "path": "/api/display/create",
+      "schedule": "20 18 * * *"
     },
     {
       "path": "/api/aws/single",
-      "schedule": "0 5 * * *"
+      "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/display/create",
+      "schedule": "20 4 * * *"
     }
   ]
 }
