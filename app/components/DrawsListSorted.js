@@ -255,7 +255,7 @@ const DrawListSorted = ({ draws }) => {
                         // The rules "difference between the second and first" or "third and second"
                         // usually apply to numbers in their sorted order.
                         // If `tempSub` needs to be re-sorted before applying BBA/BAA diff rules, add:
-                        // tempSub.sort((a, b) => a - b);
+                        tempSub.sort((a, b) => a - b);
                         // For now, assuming rules apply to the numbers *as they are* in the BBA/BAA sequence,
                         // and `sortedDrawNumbers` defines that initial sequence order.
                         // The problem statement says "the difference between the second and first number... if distribution is 'BBA'"

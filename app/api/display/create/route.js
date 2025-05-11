@@ -153,8 +153,15 @@ export async function GET() {
         let totalPassedNewRules = 0;
         let totalFireballPassedNewRules = 0;
         let totalDraws = draws.length;
-        let countBBA = 0; // <-- Added counter for BBA
-        let countBAA = 0; // <-- Added counter for BAA
+        let countBBA = 0; // Counter for BBA in main draws
+        let countBAA = 0; // Counter for BAA in main draws
+
+        // New detailed fireball tracking
+        let totalFireballSubstitutionsPassed = 0; // Total substitutions that passed across all draws
+        let totalFireballSubstitutionsChecked = 0; // Total substitutions checked across all draws
+        let drawsWithAtLeastOneFireballPass = 0; // Draws that had at least one passing substitution
+        let fireballBBACount = 0; // Count of fireball substitutions that resulted in BBA
+        let fireballBAACount = 0; // Count of fireball substitutions that resulted in BAA
 
         console.log(`Found ${totalDraws} draws for ${currentMonthName} ${currentYearStr}.`);
 
@@ -199,7 +206,11 @@ export async function GET() {
                 console.log(`Draw ID ${draw.id} FAILED new rules. Reason: ${mainDrawOutcome.reason}, A/B: ${mainDrawOutcome.abPattern}`);
             }
 
+            // Fireball validation with detailed tracking
             let isValidFireballNewRules = false;
+            let fireballPassCount = 0; // Track how many substitutions pass for this draw
+            let fireballPassDetails = []; // Track details of each passing substitution
+
             if (!isNaN(fb) && fb >= 0 && fb <= 9) {
                 const substitutions = [
                     [fb, ssn, stn],
@@ -213,25 +224,50 @@ export async function GET() {
 
                     const fireballSubOutcome = isDrawPassing(tempSub);
                     if (fireballSubOutcome.passing) {
-                        isValidFireballNewRules = true;
+                        isValidFireballNewRules = true; // At least one substitution passed
+                        fireballPassCount++; // Increment the count
+
+                        // Store details about this passing substitution
+                        fireballPassDetails.push({
+                            substitution: substitutions[j],
+                            sorted: tempSub,
+                            abPattern: fireballSubOutcome.abPattern,
+                            reason: fireballSubOutcome.reason
+                        });
+
                         console.log(`Draw ID ${draw.id} - Fireball substitution [${substitutions[j].join(',')}] (sorted: [${tempSub.join(',')}]) PASSED. Reason: ${fireballSubOutcome.reason}, A/B: ${fireballSubOutcome.abPattern}`);
-                        break;
+                        // Note: No 'break' here - we continue checking all substitutions
                     } else {
                         console.log(`Draw ID ${draw.id} - Fireball substitution [${substitutions[j].join(',')}] (sorted: [${tempSub.join(',')}]) FAILED. Reason: ${fireballSubOutcome.reason}, A/B: ${fireballSubOutcome.abPattern}`);
                     }
                 }
+
+                console.log(`Draw ID ${draw.id} - Total fireball passes: ${fireballPassCount}`);
             } else {
                 console.log(`Draw ID ${draw.id} - Fireball number is invalid or missing.`);
             }
 
             if (isValidFireballNewRules) {
                 totalFireballPassedNewRules++;
+                drawsWithAtLeastOneFireballPass++;
             }
+
+            // Update detailed fireball stats
+            totalFireballSubstitutionsPassed += fireballPassCount;
+            totalFireballSubstitutionsChecked += 3; // Always check 3 substitutions per draw
+
+            // Count patterns for fireball passes
+            fireballPassDetails.forEach(detail => {
+                if (detail.abPattern === "BBA") fireballBBACount++;
+                if (detail.abPattern === "BAA") fireballBAACount++;
+            });
 
             const drawRef = adminDb.firestore().collection('draws').doc(draw.id);
             batch.update(drawRef, {
                 isValidNewRules: isValidNewRules,
                 isValidFireballNewRules: isValidFireballNewRules,
+                fireballPassCount: fireballPassCount, // New field
+                fireballPassDetails: fireballPassDetails, // New field with details
                 newRulesABPattern: mainDrawOutcome.abPattern,
                 newRulesReason: mainDrawOutcome.reason,
                 validationError: null
@@ -253,8 +289,17 @@ export async function GET() {
             totalFireballPassedNewRules: totalFireballPassedNewRules,
             percentageNewRules: percentageNewRules,
             fireballPercentageNewRules: fireballPercentageNewRules,
-            countBBA: countBBA, // <-- Store BBA count
-            countBAA: countBAA, // <-- Store BAA count
+            countBBA: countBBA, // Store BBA count for main draws
+            countBAA: countBAA, // Store BAA count for main draws
+            // New detailed fireball stats:
+            totalFireballSubstitutionsPassed: totalFireballSubstitutionsPassed,
+            totalFireballSubstitutionsChecked: totalFireballSubstitutionsChecked,
+            drawsWithAtLeastOneFireballPass: drawsWithAtLeastOneFireballPass,
+            fireballBBACount: fireballBBACount,
+            fireballBAACount: fireballBAACount,
+            averageFireballPassesPerDraw: totalDraws > 0 ? totalFireballSubstitutionsPassed / totalDraws : 0,
+            fireballSubstitutionPassRate: totalFireballSubstitutionsChecked > 0 ?
+                (totalFireballSubstitutionsPassed / totalFireballSubstitutionsChecked) * 100 : 0,
             lastUpdated: adminDb.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
@@ -278,8 +323,15 @@ export async function GET() {
                 totalFireballPassed: currentData.totalFireballPassedNewRules,
                 percentage: currentData.percentageNewRules,
                 fireballPercentage: currentData.fireballPercentageNewRules,
-                countBBA: currentData.countBBA !== undefined ? currentData.countBBA : 0, // <-- Return BBA count
-                countBAA: currentData.countBAA !== undefined ? currentData.countBAA : 0  // <-- Return BAA count
+                countBBA: currentData.countBBA !== undefined ? currentData.countBBA : 0, // Return BBA count
+                countBAA: currentData.countBAA !== undefined ? currentData.countBAA : 0, // Return BAA count
+                // Include new fireball stats in response:
+                totalFireballSubstitutionsPassed: currentData.totalFireballSubstitutionsPassed || 0,
+                totalFireballSubstitutionsChecked: currentData.totalFireballSubstitutionsChecked || 0,
+                fireballBBACount: currentData.fireballBBACount || 0,
+                fireballBAACount: currentData.fireballBAACount || 0,
+                averageFireballPassesPerDraw: currentData.averageFireballPassesPerDraw || 0,
+                fireballSubstitutionPassRate: currentData.fireballSubstitutionPassRate || 0
             } : null,
             previousMonthStats: prevData ? {
                 monthYear: prevData.monthYear,
@@ -288,8 +340,15 @@ export async function GET() {
                 totalFireballPassed: prevData.totalFireballPassedNewRules,
                 percentage: prevData.percentageNewRules,
                 fireballPercentage: prevData.fireballPercentageNewRules,
-                countBBA: prevData.countBBA !== undefined ? prevData.countBBA : 0, // <-- Return BBA count for prev month
-                countBAA: prevData.countBAA !== undefined ? prevData.countBAA : 0  // <-- Return BAA count for prev month
+                countBBA: prevData.countBBA !== undefined ? prevData.countBBA : 0, // Return BBA count for prev month
+                countBAA: prevData.countBAA !== undefined ? prevData.countBAA : 0, // Return BAA count for prev month
+                // Include new fireball stats for previous month:
+                totalFireballSubstitutionsPassed: prevData.totalFireballSubstitutionsPassed || 0,
+                totalFireballSubstitutionsChecked: prevData.totalFireballSubstitutionsChecked || 0,
+                fireballBBACount: prevData.fireballBBACount || 0,
+                fireballBAACount: prevData.fireballBAACount || 0,
+                averageFireballPassesPerDraw: prevData.averageFireballPassesPerDraw || 0,
+                fireballSubstitutionPassRate: prevData.fireballSubstitutionPassRate || 0
             } : null,
         };
 

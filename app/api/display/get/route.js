@@ -63,11 +63,13 @@ export async function GET() {
         const currentStatsDocId = `${currentMonthName}-${currentYearStr}`;
         const currentMonthRef = firestore.collection('drawStats').doc(currentStatsDocId);
         const currentSnap = await currentMonthRef.get();
+        const currentData = currentSnap.data();
 
         // Fetch previous month stats
         const previousStatsDocId = `${prevMonthName}-${prevMonthYearStr}`;
         const previousMonthRef = firestore.collection('drawStats').doc(previousStatsDocId);
         const previousSnap = await previousMonthRef.get();
+        const prevData = previousSnap.data();
 
         // If current month doc doesn't exist, throw an error or handle accordingly
         if (!currentSnap.exists) {
@@ -82,28 +84,40 @@ export async function GET() {
 
         // Build the response object
         const responseData = {
-            currentMonthStats: {
-                monthYear: currentSnap.data().monthYear,
-                totalDraws: currentSnap.data().totalDraws,
-                totalPassed: currentSnap.data().totalPassedNewRules,
-                totalFireballPassed: currentSnap.data().totalFireballPassedNewRules,
-                percentage: currentSnap.data().percentageNewRules,
-                fireballPercentage: currentSnap.data().fireballPercentageNewRules,
-                countBBA: currentSnap.data().countBBA !== undefined ? currentSnap.data().countBBA : 0, // <-- Return BBA count
-                countBAA: currentSnap.data().countBAA !== undefined ? currentSnap.data().countBAA : 0  // <-- Return BAA count
-            },
-            previousMonthStats: previousSnap.exists
-                ? {
-                    monthYear: previousSnap.data().monthYear,
-                    totalDraws: previousSnap.data().totalDraws,
-                    totalPassed: previousSnap.data().totalPassedNewRules,
-                    totalFireballPassed: previousSnap.data().totalFireballPassedNewRules,
-                    percentage: previousSnap.data().percentageNewRules,
-                    fireballPercentage: previousSnap.data().fireballPercentageNewRules,
-                    countBBA: previousSnap.data().countBBA !== undefined ? previousSnap.data().countBBA : 0, // <-- Return BBA count for prev month
-                    countBAA: previousSnap.data().countBAA !== undefined ? previousSnap.data().countBAA : 0  // <-- Return BAA count for prev month
-            }
-                : null,
+            currentMonthStats: currentData ? {
+                monthYear: currentData.monthYear,
+                totalDraws: currentData.totalDraws,
+                totalPassed: currentData.totalPassedNewRules,
+                totalFireballPassed: currentData.totalFireballPassedNewRules,
+                percentage: currentData.percentageNewRules,
+                fireballPercentage: currentData.fireballPercentageNewRules,
+                countBBA: currentData.countBBA !== undefined ? currentData.countBBA : 0, // Return BBA count
+                countBAA: currentData.countBAA !== undefined ? currentData.countBAA : 0, // Return BAA count
+                // Include new fireball stats in response:
+                totalFireballSubstitutionsPassed: currentData.totalFireballSubstitutionsPassed || 0,
+                totalFireballSubstitutionsChecked: currentData.totalFireballSubstitutionsChecked || 0,
+                fireballBBACount: currentData.fireballBBACount || 0,
+                fireballBAACount: currentData.fireballBAACount || 0,
+                averageFireballPassesPerDraw: currentData.averageFireballPassesPerDraw || 0,
+                fireballSubstitutionPassRate: currentData.fireballSubstitutionPassRate || 0
+            } : null,
+            previousMonthStats: prevData ? {
+                monthYear: prevData.monthYear,
+                totalDraws: prevData.totalDraws,
+                totalPassed: prevData.totalPassedNewRules,
+                totalFireballPassed: prevData.totalFireballPassedNewRules,
+                percentage: prevData.percentageNewRules,
+                fireballPercentage: prevData.fireballPercentageNewRules,
+                countBBA: prevData.countBBA !== undefined ? prevData.countBBA : 0, // Return BBA count for prev month
+                countBAA: prevData.countBAA !== undefined ? prevData.countBAA : 0, // Return BAA count for prev month
+                // Include new fireball stats for previous month:
+                totalFireballSubstitutionsPassed: prevData.totalFireballSubstitutionsPassed || 0,
+                totalFireballSubstitutionsChecked: prevData.totalFireballSubstitutionsChecked || 0,
+                fireballBBACount: prevData.fireballBBACount || 0,
+                fireballBAACount: prevData.fireballBAACount || 0,
+                averageFireballPassesPerDraw: prevData.averageFireballPassesPerDraw || 0,
+                fireballSubstitutionPassRate: prevData.fireballSubstitutionPassRate || 0
+            } : null,
         };
 
         return new Response(JSON.stringify(responseData), {
