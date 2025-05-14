@@ -12,20 +12,20 @@ import {
     Divider,
     alpha,
     styled,
-    Collapse, // Import Collapse
-    IconButton // Import IconButton
+    Collapse,
+    IconButton,
+    Chip
 } from '@mui/material';
 import { useStore } from '@/app/store/store';
-import { playCombo } from "@/app/services/playService"; // User's updated import
-// import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // Not used
-// import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'; // Not used
+import { playCombo } from "@/app/services/playService";
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import SportsEsportsOutlinedIcon from '@mui/icons-material/SportsEsportsOutlined';
 import Looks3OutlinedIcon from '@mui/icons-material/Looks3Outlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import RuleFolderOutlinedIcon from '@mui/icons-material/RuleFolderOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import NumbersList from "@/app/components/NumbersList"; // For expand/collapse indication
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import NumbersList from "@/app/components/NumbersList";
 
 // Styled component for the main container
 const StyledRulesContainer = styled(Paper)(({ theme }) => ({
@@ -38,6 +38,18 @@ const StyledRulesContainer = styled(Paper)(({ theme }) => ({
     color: '#ffffff',
 }));
 
+// Styled component for combination chips
+const CombinationChip = styled(Chip)(({ theme }) => ({
+    margin: theme.spacing(0.5),
+    background: 'rgba(255, 255, 255, 0.15)',
+    color: '#f0f0f0',
+    border: `1px solid ${alpha('#ffffff', 0.2)}`,
+    '&:hover': {
+        background: 'rgba(255, 195, 0, 0.2)',
+        borderColor: 'rgba(255, 195, 0, 0.4)',
+    },
+}));
+
 // Collapsible Rule Item Component
 const CollapsibleRuleItem = ({ icon, title, description, expanded, onToggle }) => (
     <Paper
@@ -46,20 +58,18 @@ const CollapsibleRuleItem = ({ icon, title, description, expanded, onToggle }) =
             background: 'rgba(255, 255, 255, 0.1)',
             border: `1px solid ${alpha('#ffffff', 0.15)}`,
             borderRadius: 2,
-            // padding: 2.5, // Padding will be applied to header and content separately
-            // height: '100%', // Height will be dynamic
         }}
     >
         {/* Clickable Header for Toggling */}
         <Box
             onClick={onToggle}
             sx={{
-                padding: theme => theme.spacing(2, 2.5), // Consistent padding for the header
+                padding: theme => theme.spacing(2, 2.5),
                 display: 'flex',
                 alignItems: 'center',
                 cursor: 'pointer',
                 gap: 2,
-                borderBottom: expanded ? `1px solid ${alpha('#ffffff', 0.1)}` : 'none', // Separator when expanded
+                borderBottom: expanded ? `1px solid ${alpha('#ffffff', 0.1)}` : 'none',
             }}
         >
             <ListItemIcon sx={{ minWidth: 'auto', color: '#ffc300', mt: 0.5 }}>
@@ -85,9 +95,7 @@ const CollapsibleRuleItem = ({ icon, title, description, expanded, onToggle }) =
         {/* Collapsible Content */}
         <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ padding: theme => theme.spacing(1.5, 2.5, 2.5, 2.5), color: 'rgba(255, 255, 255, 0.85)' }}>
-                {/* The description for rule 3 is already a JSX element, so it will render correctly.
-                     For plain string descriptions, they will also render fine. */}
-                <Typography variant="body1" component="div"> {/* Ensure Typography for consistent styling if description is a string */}
+                <Typography variant="body1" component="div">
                     {description}
                 </Typography>
             </Box>
@@ -102,17 +110,15 @@ const PlayComboInfo = () => {
         clearNumbers();
     };
 
-    const [expandedRule, setExpandedRule] = useState(null); // null or -1 for all collapsed, or 0 for first rule expanded by default
+    // State for expanded rule sections
+    const [expandedRule, setExpandedRule] = useState(null);
+    const [showBBACombinations, setShowBBACombinations] = useState(false);
+    const [showBAACombinations, setShowBAACombinations] = useState(false);
 
     const handlePlayClick = async () => {
-        // console.log("Play button clicked! Calling playCombo service...");
         try {
             await playCombo();
-            // console.log("playCombo service called successfully.");
-            // Add any success feedback for the user here, e.g., a toast message
         } catch (error) {
-            // console.error("Error calling playCombo service:", error);
-            // Add any error feedback for the user here
             alert("There was an issue starting the play sequence. Please try again.");
         }
     };
@@ -120,6 +126,53 @@ const PlayComboInfo = () => {
     const handleToggleRule = (index) => {
         setExpandedRule(expandedRule === index ? null : index);
     };
+
+    // Create all valid BBA combinations
+    const generateBBACombos = () => {
+        const combos = [];
+
+        // Valid BB pairs (first two B numbers with difference ≤ 2)
+        const bbPairs = [
+            [0, 1], [0, 2],
+            [1, 2], [1, 3],
+            [2, 3], [2, 4],
+            [3, 4]
+        ];
+
+        // For each valid BB pair, combine with each A number (5-9)
+        for (const pair of bbPairs) {
+            for (let a = 5; a <= 9; a++) {
+                combos.push([...pair, a]);
+            }
+        }
+
+        return combos;
+    };
+
+    // Create all valid BAA combinations
+    const generateBAACombos = () => {
+        const combos = [];
+
+        // Valid AA pairs (two A numbers with difference ≤ 2)
+        const aaPairs = [
+            [5, 6], [5, 7],
+            [6, 7], [6, 8],
+            [7, 8], [7, 9],
+            [8, 9]
+        ];
+
+        // For each valid AA pair, combine with each B number (0-4)
+        for (const pair of aaPairs) {
+            for (let b = 0; b <= 4; b++) {
+                combos.push([b, ...pair]);
+            }
+        }
+
+        return combos;
+    };
+
+    const bbaCombinations = generateBBACombos();
+    const baaCombinations = generateBAACombos();
 
     const rules = [
         {
@@ -175,9 +228,8 @@ const PlayComboInfo = () => {
                 Combo Rules
             </Typography>
 
-            <Grid container spacing={2}> {/* Reduced spacing slightly for a tighter look */}
+            <Grid container spacing={2}>
                 {rules.map((rule, index) => (
-                    // Each rule item will take full width to allow for clear expansion
                     <Grid item xs={12} key={index}>
                         <CollapsibleRuleItem
                             icon={rule.icon}
@@ -189,6 +241,135 @@ const PlayComboInfo = () => {
                     </Grid>
                 ))}
             </Grid>
+
+            {/* New Possible Combinations Section */}
+            <Paper
+                elevation={0}
+                sx={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${alpha('#ffffff', 0.15)}`,
+                    borderRadius: 2,
+                    mt: 2,
+                }}
+            >
+                <Box
+                    sx={{
+                        padding: theme => theme.spacing(2, 2.5),
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'default',
+                        gap: 2,
+                        borderBottom: `1px solid ${alpha('#ffffff', 0.1)}`,
+                    }}
+                >
+                    <ListItemIcon sx={{ minWidth: 'auto', color: '#ffc300', mt: 0.5 }}>
+                        <InfoOutlinedIcon fontSize="large" />
+                    </ListItemIcon>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: '#f0f0f0' }}>
+                            Possible Combinations
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+                            There are exactly 35 possible combinations for BBA and 35 for BAA patterns.
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ padding: theme => theme.spacing(2, 2.5) }}>
+                    <Grid container spacing={2}>
+                        {/* BBA Combinations */}
+                        <Grid item xs={12} md={6}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => setShowBBACombinations(!showBBACombinations)}
+                                endIcon={<ExpandMoreIcon sx={{
+                                    transform: showBBACombinations ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.3s'
+                                }} />}
+                                sx={{
+                                    color: '#ffc300',
+                                    borderColor: 'rgba(255, 195, 0, 0.5)',
+                                    '&:hover': {
+                                        borderColor: '#ffc300',
+                                        background: 'rgba(255, 195, 0, 0.1)',
+                                    },
+                                    mb: 1
+                                }}
+                            >
+                                View BBA Combinations (35)
+                            </Button>
+                            <Collapse in={showBBACombinations} timeout="auto" unmountOnExit>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    mt: 1,
+                                    p: 1.5,
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderRadius: 1
+                                }}>
+                                    {bbaCombinations.map((combo, idx) => (
+                                        <CombinationChip
+                                            key={idx}
+                                            label={combo.join(' - ')}
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                </Box>
+                            </Collapse>
+                        </Grid>
+
+                        {/* BAA Combinations */}
+                        <Grid item xs={12} md={6}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => setShowBAACombinations(!showBAACombinations)}
+                                endIcon={<ExpandMoreIcon sx={{
+                                    transform: showBAACombinations ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.3s'
+                                }} />}
+                                sx={{
+                                    color: '#ffc300',
+                                    borderColor: 'rgba(255, 195, 0, 0.5)',
+                                    '&:hover': {
+                                        borderColor: '#ffc300',
+                                        background: 'rgba(255, 195, 0, 0.1)',
+                                    },
+                                    mb: 1
+                                }}
+                            >
+                                View BAA Combinations (35)
+                            </Button>
+                            <Collapse in={showBAACombinations} timeout="auto" unmountOnExit>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    mt: 1,
+                                    p: 1.5,
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderRadius: 1
+                                }}>
+                                    {baaCombinations.map((combo, idx) => (
+                                        <CombinationChip
+                                            key={idx}
+                                            label={combo.join(' - ')}
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                </Box>
+                            </Collapse>
+                        </Grid>
+                    </Grid>
+
+                    {/* Summary stats */}
+                    <Box sx={{ mt: 2, p: 2, background: 'rgba(255, 195, 0, 0.1)', borderRadius: 1, border: '1px dashed rgba(255, 195, 0, 0.3)' }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                            <strong>Total Valid Combinations:</strong> 70 out of 720 possible 3-digit combinations (9.7%)
+                        </Typography>
+                    </Box>
+                </Box>
+            </Paper>
 
             <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', my: 4 }} />
 

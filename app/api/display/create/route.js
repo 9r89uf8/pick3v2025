@@ -1,4 +1,4 @@
-// app/api/posts/route.js
+// app/api/create/route.js
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
 export const dynamic = 'force-dynamic';

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
 import DrawsList from "@/app/components/DrawsList";
+import DrawsListSortedX from "@/app/components/DrawsListSortedX";
 import DrawsListSorted from "@/app/components/DrawsListSorted";
 import PlayComboInfo from "@/app/components/PlayComboInfo";
 import Stats from "@/app/components/Stats";
@@ -295,21 +296,21 @@ const HomePage = () => {
           {/*    </Button>*/}
           {/*  </ButtonGroup>*/}
 
-          {/*  <Button*/}
-          {/*      variant="contained"*/}
-          {/*      disabled={loading}*/}
-          {/*      size="large"*/}
-          {/*      onClick={handleCheck}*/}
-          {/*      sx={{*/}
-          {/*        mt: 3,*/}
-          {/*        mb: 1,*/}
-          {/*        background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
-          {/*        color: 'black',*/}
-          {/*        minWidth: 200,*/}
-          {/*      }}*/}
-          {/*  >*/}
-          {/*    Check*/}
-          {/*  </Button>*/}
+            {/*<Button*/}
+            {/*    variant="contained"*/}
+            {/*    disabled={loading}*/}
+            {/*    size="large"*/}
+            {/*    onClick={handleCheck}*/}
+            {/*    sx={{*/}
+            {/*      mt: 3,*/}
+            {/*      mb: 1,*/}
+            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
+            {/*      color: 'black',*/}
+            {/*      minWidth: 200,*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*  Check*/}
+            {/*</Button>*/}
 
           {/*  {numbers && numbers.length > 0 && (*/}
           {/*      <Box display="flex" flexDirection="column" alignItems="center">*/}

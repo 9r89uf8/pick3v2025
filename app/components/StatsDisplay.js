@@ -266,49 +266,49 @@ const MonthlyStats = ({ data, title }) => {
                 </Grid>
 
                 {/* Detailed Fireball Statistics */}
-                <SectionHeader
-                    title="Fireball Substitution Details"
-                    subtitle="Deep dive into fireball performance"
-                    icon={Insights}
-                />
+                {/*<SectionHeader*/}
+                {/*    title="Fireball Substitution Details"*/}
+                {/*    subtitle="Deep dive into fireball performance"*/}
+                {/*    icon={Insights}*/}
+                {/*/>*/}
 
-                <Grid container spacing={3} sx={{ mb: 5 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <SimpleStatCard
-                            title="Total Substitutions Passed"
-                            value={data.totalFireballSubstitutionsPassed}
-                            color="#4caf50"
-                            icon={BarChart}
-                            subText={`Out of ${data.totalFireballSubstitutionsChecked || 0} checked`}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <SimpleStatCard
-                            title="Substitution Pass Rate"
-                            value={`${data.fireballSubstitutionPassRate?.toFixed(1)}%`}
-                            color="#ff5722"
-                            icon={TrendingUp}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <SimpleStatCard
-                            title="Average per Draw"
-                            value={data.averageFireballPassesPerDraw?.toFixed(1)}
-                            color="#2196f3"
-                            icon={Pattern}
-                            subText="Successful substitutions"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <SimpleStatCard
-                            title="Draws with Any Pass"
-                            value={data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed}
-                            color="#9c27b0"
-                            icon={AutoAwesome}
-                            subText={`${(((data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed) / data.totalDraws * 100) || 0).toFixed(1)}%`}
-                        />
-                    </Grid>
-                </Grid>
+                {/*<Grid container spacing={3} sx={{ mb: 5 }}>*/}
+                {/*    <Grid item xs={12} sm={6} md={3}>*/}
+                {/*        <SimpleStatCard*/}
+                {/*            title="Total Substitutions Passed"*/}
+                {/*            value={data.totalFireballSubstitutionsPassed}*/}
+                {/*            color="#4caf50"*/}
+                {/*            icon={BarChart}*/}
+                {/*            subText={`Out of ${data.totalFireballSubstitutionsChecked || 0} checked`}*/}
+                {/*        />*/}
+                {/*    </Grid>*/}
+                {/*    <Grid item xs={12} sm={6} md={3}>*/}
+                {/*        <SimpleStatCard*/}
+                {/*            title="Substitution Pass Rate"*/}
+                {/*            value={`${data.fireballSubstitutionPassRate?.toFixed(1)}%`}*/}
+                {/*            color="#ff5722"*/}
+                {/*            icon={TrendingUp}*/}
+                {/*        />*/}
+                {/*    </Grid>*/}
+                {/*    <Grid item xs={12} sm={6} md={3}>*/}
+                {/*        <SimpleStatCard*/}
+                {/*            title="Average per Draw"*/}
+                {/*            value={data.averageFireballPassesPerDraw?.toFixed(1)}*/}
+                {/*            color="#2196f3"*/}
+                {/*            icon={Pattern}*/}
+                {/*            subText="Successful substitutions"*/}
+                {/*        />*/}
+                {/*    </Grid>*/}
+                {/*    <Grid item xs={12} sm={6} md={3}>*/}
+                {/*        <SimpleStatCard*/}
+                {/*            title="Draws with Any Pass"*/}
+                {/*            value={data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed}*/}
+                {/*            color="#9c27b0"*/}
+                {/*            icon={AutoAwesome}*/}
+                {/*            subText={`${(((data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed) / data.totalDraws * 100) || 0).toFixed(1)}%`}*/}
+                {/*        />*/}
+                {/*    </Grid>*/}
+                {/*</Grid>*/}
 
                 {/* Pattern Distribution */}
                 <SectionHeader
@@ -361,36 +361,36 @@ const MonthlyStats = ({ data, title }) => {
                 </Grid>
 
                 {/* Summary Box */}
-                <Box
-                    sx={{
-                        mt: 4,
-                        p: 3,
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        borderRadius: 2,
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                    }}
-                >
-                    <Typography variant="h6" sx={{ color: '#ffc300', mb: 2, fontWeight: 600 }}>
-                        Summary
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                <strong>Total Passed:</strong> {data.totalPassed + (data.totalFireballPassed || 0)}
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                <strong>All BBA:</strong> {(data.countBBA || 0) + (data.fireballBBACount || 0)}
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                <strong>All BAA:</strong> {(data.countBAA || 0) + (data.fireballBAACount || 0)}
-                            </Typography>
-                        </Grid>
-                    </Grid>
-                </Box>
+                {/*<Box*/}
+                {/*    sx={{*/}
+                {/*        mt: 4,*/}
+                {/*        p: 3,*/}
+                {/*        background: 'rgba(255, 255, 255, 0.02)',*/}
+                {/*        borderRadius: 2,*/}
+                {/*        border: '1px solid rgba(255, 255, 255, 0.08)',*/}
+                {/*    }}*/}
+                {/*>*/}
+                {/*    <Typography variant="h6" sx={{ color: '#ffc300', mb: 2, fontWeight: 600 }}>*/}
+                {/*        Summary*/}
+                {/*    </Typography>*/}
+                {/*    <Grid container spacing={2}>*/}
+                {/*        <Grid item xs={12} sm={4}>*/}
+                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
+                {/*                <strong>Total Passed:</strong> {data.totalPassed + (data.totalFireballPassed || 0)}*/}
+                {/*            </Typography>*/}
+                {/*        </Grid>*/}
+                {/*        <Grid item xs={12} sm={4}>*/}
+                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
+                {/*                <strong>All BBA:</strong> {(data.countBBA || 0) + (data.fireballBBACount || 0)}*/}
+                {/*            </Typography>*/}
+                {/*        </Grid>*/}
+                {/*        <Grid item xs={12} sm={4}>*/}
+                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
+                {/*                <strong>All BAA:</strong> {(data.countBAA || 0) + (data.fireballBAACount || 0)}*/}
+                {/*            </Typography>*/}
+                {/*        </Grid>*/}
+                {/*    </Grid>*/}
+                {/*</Box>*/}
             </CardContent>
         </StyledCard>
     );
