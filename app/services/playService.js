@@ -1,6 +1,6 @@
 import { useStore } from '../store/store'; // Ensure you import the correct store
 
-export const playCombo = async (formData) => {
+export const playOptionOne = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
         const response = await fetch('/api/play/sortedPlay',{
@@ -22,10 +22,10 @@ export const playCombo = async (formData) => {
     }
 };
 
-export const playStraight = async (formData) => {
+export const playOptionTwo = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/sortedPlay',{
+        const response = await fetch('/api/play/newPlayNumbers',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -43,12 +43,13 @@ export const playStraight = async (formData) => {
         return [];
     }
 };
+
 
 export const checkDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/test', {
+        const response = await fetch('/api/passTest/unordered', {
             method: 'GET',
             cache: 'no-store'
         });

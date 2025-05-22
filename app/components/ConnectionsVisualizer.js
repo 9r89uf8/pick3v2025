@@ -55,18 +55,6 @@ const ConnectionsVisualizer = ({ numbers }) => {
      * - If exactly 3 draws: use the "range" logic (0–2 => col0, 3–6 => col1, 7–9 => col2).
      * - Otherwise: if this digit is actually used in that column, make it blue; else white.
      */
-    const getBackgroundColor = (number, columnIndex) => {
-        if (numbers.length === 3) {
-            // Range logic
-            if (columnIndex === 0 && number >= 0 && number <= 2) return '#3B82F6';
-            if (columnIndex === 1 && number >= 3 && number <= 6) return '#3B82F6';
-            if (columnIndex === 2 && number >= 7 && number <= 9) return '#3B82F6';
-            return 'white';
-        } else {
-            // For any other number of draws, only highlight "used" numbers
-            return isNumberUsed(number, columnIndex) ? '#3B82F6' : 'white';
-        }
-    };
 
     return (
         <div style={{ width: '100%', maxWidth: '1560px', margin: '0 auto' }}>
@@ -132,7 +120,6 @@ const ConnectionsVisualizer = ({ numbers }) => {
                                     cx={getNumberXPosition(columnIndex)}
                                     cy={getYPosition(i) - 28 + numberYOffset}
                                     r="45"
-                                    fill={getBackgroundColor(i, columnIndex)}
                                 />
                                 <text
                                     x={getNumberXPosition(columnIndex)}

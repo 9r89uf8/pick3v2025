@@ -103,8 +103,8 @@ export async function GET() {
         // Reference to the 'draws' collection, ordered by 'index' descending
         const drawsCollection = firestore
             .collection("draws")
-            .where('year', '==', '2025') // Example filter, uncomment and modify as needed
-            .where("drawMonth", "==", 'May') // Example filter, uncomment and modify as needed
+            // .where('year', '==', '2025') // Example filter, uncomment and modify as needed
+            // .where("drawMonth", "==", 'Mar') // Example filter, uncomment and modify as needed
             .orderBy('index', 'desc'); // Fetches draws, newest first based on index
 
         // Get the snapshot of the draws collection

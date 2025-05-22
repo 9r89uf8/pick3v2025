@@ -5,17 +5,20 @@ import DrawsList from "@/app/components/DrawsList";
 import DrawsListSortedX from "@/app/components/DrawsListSortedX";
 import DrawsListSorted from "@/app/components/DrawsListSorted";
 import PlayComboInfo from "@/app/components/PlayComboInfo";
+import PlayComboInfoUnordered from "@/app/components/PlayComboInfoUnordered";
 import Stats from "@/app/components/Stats";
 import MarkovSecondOrder from "@/app/components/MarkovSecondOrder";
 import MarkovFirstOrder from "@/app/components/MarkovFirstOrder";
 import ProbabilityTable from "@/app/components/ProbabilityTable";
 import StatsDisplay from "@/app/components/StatsDisplay";
+import { setDisplayInfo, setDisplayInfoUnordered } from "@/app/services/displayService";
 import {
   Button,
   List,
   Container,
   Typography,
   Box,
+  AppBar,
   ToggleButton,
   ToggleButtonGroup,
   Stack,
@@ -24,6 +27,8 @@ import {
   Collapse,
   Divider,
   Tooltip,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { alpha, styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
@@ -33,7 +38,7 @@ import { useStore } from '@/app/store/store';
 import { playCombo, playStraight, checkDraws } from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
-import { getDisplayInfo } from "@/app/services/displayService";
+import { getDisplayInfo, getDisplayInfoUnordered } from "@/app/services/displayService";
 
 const Item = styled(Paper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -47,46 +52,6 @@ const Item = styled(Paper)(({ theme }) => ({
   border: `1px solid ${alpha('#ffffff', 0.2)}`,
 }));
 
-const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
-  width: '40px',
-  height: '40px',
-  fontSize: 30,
-  margin: '4px',
-  borderRadius: '8px',
-  color: '#ffffff',
-  border: `1px solid ${alpha('#ffffff', 0.3)}`,
-  '&.Mui-selected': {
-    backgroundColor: alpha('#9f0000', 0.6),
-    color: '#000000',
-    '&:hover': {
-      backgroundColor: alpha('#9f0000', 0.8),
-    },
-  },
-  '&:hover': {
-    backgroundColor: alpha('#ffffff', 0.1),
-  },
-}));
-
-const PermutationToggleButton = styled(ToggleButton)(({ theme }) => ({
-  minWidth: '80px',
-  height: '40px',
-  fontSize: 16,
-  margin: '4px',
-  borderRadius: '8px',
-  color: '#ffffff',
-  border: `1px solid ${alpha('#ffffff', 0.3)}`,
-  '&.Mui-selected': {
-    backgroundColor: alpha('#9f0000', 0.6),
-    color: '#000000',
-    '&:hover': {
-      backgroundColor: alpha('#9f0000', 0.8),
-    },
-  },
-  '&:hover': {
-    backgroundColor: alpha('#ffffff', 0.1),
-  },
-}));
-
 const ExpandButton = styled(IconButton)(({ theme }) => ({
   color: '#ffffff',
   margin: theme.spacing(1),
@@ -96,250 +61,108 @@ const ExpandButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
+// TabPanel component to encapsulate tab content
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+
+  return (
+      <div
+          role="tabpanel"
+          hidden={value !== index}
+          id={`simple-tabpanel-${index}`}
+          aria-labelledby={`simple-tab-${index}`}
+          {...other}
+      >
+        {value === index && (
+            <Box sx={{ pt: 2 }}>
+              {children}
+            </Box>
+        )}
+      </div>
+  );
+}
+
 const HomePage = () => {
   const posts = useStore((state) => state.posts);
   const recurrence = useStore((state) => state.recurrence);
   const numbers = useStore((state) => state.numbers);
   const display = useStore((state) => state.display);
+  const displayUnordered = useStore((state) => state.displayUnordered);
   const [loading, setLoading] = useState(false);
   const clearNumbers = useStore((state) => state.clearNumbers);
   const [showDashboard, setShowDashboard] = useState(false);
   const [expandSection, setExpandSection] = useState(false);
+  const [tabValue, setTabValue] = useState(0); // State for active tab
 
-
-  const [excludedPermutations, setExcludedPermutations] = useState([]);
-
-  const [excludedNumbers, setExcludedNumbers] = useState({
-    first: [],
-    second: [],
-    third: []
-  });
+  // Tab change handler
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
 
   useEffect(() => {
     const getPosts = async () => {
       await fetchPosts();
       await getDisplayInfo()
+      await getDisplayInfoUnordered()
     };
     getPosts();
   }, []);
 
-  const handleNumberToggle = (position, value) => {
-    setExcludedNumbers(prev => ({
-      ...prev,
-      [position]: prev[position].includes(value)
-          ? prev[position].filter(n => n !== value)
-          : [...prev[position], value]
-    }));
-  };
-
-  // Handle toggling of permutation patterns
-  const handlePermutationToggle = (pattern) => {
-    setExcludedPermutations(prev =>
-        prev.includes(pattern)
-            ? prev.filter(p => p !== pattern)
-            : [...prev, pattern]
-    );
-  };
-
-  const handleCombo = async () => {
-    setLoading(true);
-    await playCombo({
-      excludedNumbers,
-      excludePermutations: excludedPermutations
-    });
-    setLoading(false);
-  };
-
-  const handleStraight = async () => {
-    setLoading(true);
-    await playStraight({
-      excludedNumbers,
-      excludePermutations: excludedPermutations
-    });
-    setLoading(false);
-  };
-
-  const handleCheck = async () => {
-    await checkDraws();
-  };
-
-  const handleClear = () => {
-    clearNumbers();
-    setExcludedNumbers({ first: [], second: [], third: [] });
-    setExcludedPermutations([]); // Clear excluded permutations too
-  };
-
-  const renderNumberSelection = (position, numbers, label) => (
-      <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          {label}
-        </Typography>
-        <ToggleButtonGroup value={excludedNumbers[position]} sx={{ flexWrap: 'wrap' }}>
-          {numbers.map((number) => (
-              <StyledToggleButton
-                  key={number}
-                  value={number}
-                  selected={excludedNumbers[position].includes(number)}
-                  onChange={() => handleNumberToggle(position, number)}
-              >
-                {number}
-              </StyledToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Box>
-  );
-
-  // New function to render permutation selection section
-  const renderPermutationSelection = () => (
-      <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Exclude Permutations
-        </Typography>
-        <Box sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          justifyContent: 'center'
-        }}>
-          <Tooltip title="Lowest, Middle, Highest" arrow>
-            <PermutationToggleButton
-                value="LMH"
-                selected={excludedPermutations.includes("LMH")}
-                onChange={() => handlePermutationToggle("LMH")}
-            >
-              L,M,H
-            </PermutationToggleButton>
-          </Tooltip>
-          <Tooltip title="Lowest, Highest, Middle" arrow>
-            <PermutationToggleButton
-                value="LHM"
-                selected={excludedPermutations.includes("LHM")}
-                onChange={() => handlePermutationToggle("LHM")}
-            >
-              L,H,M
-            </PermutationToggleButton>
-          </Tooltip>
-          <Tooltip title="Middle, Lowest, Highest" arrow>
-            <PermutationToggleButton
-                value="MLH"
-                selected={excludedPermutations.includes("MLH")}
-                onChange={() => handlePermutationToggle("MLH")}
-            >
-              M,L,H
-            </PermutationToggleButton>
-          </Tooltip>
-          <Tooltip title="Middle, Highest, Lowest" arrow>
-            <PermutationToggleButton
-                value="MHL"
-                selected={excludedPermutations.includes("MHL")}
-                onChange={() => handlePermutationToggle("MHL")}
-            >
-              M,H,L
-            </PermutationToggleButton>
-          </Tooltip>
-          <Tooltip title="Highest, Lowest, Middle" arrow>
-            <PermutationToggleButton
-                value="HLM"
-                selected={excludedPermutations.includes("HLM")}
-                onChange={() => handlePermutationToggle("HLM")}
-            >
-              H,L,M
-            </PermutationToggleButton>
-          </Tooltip>
-          <Tooltip title="Highest, Middle, Lowest" arrow>
-            <PermutationToggleButton
-                value="HML"
-                selected={excludedPermutations.includes("HML")}
-                onChange={() => handlePermutationToggle("HML")}
-            >
-              H,M,L
-            </PermutationToggleButton>
-          </Tooltip>
-        </Box>
-      </Box>
-  );
-
   return (
       <Box sx={{ width: '100%' }}>
         <Container maxWidth="sm">
-          {/*<Item elevation={4}>*/}
-          {/*  <Typography variant="h6" sx={{ mb: 2, color: '#ffc300' }}>*/}
-          {/*    Select Numbers to Exclude*/}
-          {/*  </Typography>*/}
+          {/* Tabs UI */}
+          <AppBar position="static">
+            <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                indicatorColor="secondary"
+                textColor="inherit"
+                variant="fullWidth"
+                aria-label="full width tabs example"
+            >
+              <Tab label="Option 1" />
+              <Tab label="Option 2" />
+            </Tabs>
+          </AppBar>
 
-          {/*  <Stack spacing={3}>*/}
-          {/*    {renderNumberSelection('first', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'First Position')}*/}
-          {/*    {renderNumberSelection('second', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Second Position')}*/}
-          {/*    {renderNumberSelection('third', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Third Position')}*/}
+          {/* First Tab Content */}
+          <TabPanel value={tabValue} index={0}>
+            <PlayComboInfo />
+            {display && (
+                <StatsDisplay display={display} getter={setDisplayInfo}/>
+            )}
 
-          {/*    <Divider sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', my: 2 }} />*/}
+            {posts.length > 0 ? (
+                <Box display="flex" flexDirection="column" alignItems="center">
+                  <List>
+                    <DrawsListSortedX draws={posts} />
+                  </List>
+                </Box>
+            ) : (
+                <Typography sx={{ textAlign: 'center', mt: 2 }}>No posts available</Typography>
+            )}
+          </TabPanel>
 
-          {/*    /!* Add the new permutation selection section *!/*/}
-          {/*    {renderPermutationSelection()}*/}
-          {/*  </Stack>*/}
+          {/* Second Tab Content */}
+          <TabPanel value={tabValue} index={1}>
+            <PlayComboInfoUnordered />
+            {display && (
+                <StatsDisplay display={displayUnordered} getter={setDisplayInfoUnordered} />
+            )}
 
-          {/*  <ButtonGroup variant="contained" aria-label="Basic button group">*/}
-          {/*    <Button*/}
-          {/*        variant="contained"*/}
-          {/*        disabled={loading}*/}
-          {/*        size="large"*/}
-          {/*        onClick={handleStraight}*/}
-          {/*        sx={{*/}
-          {/*          mt: 3,*/}
-          {/*          mb: 1,*/}
-          {/*          background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
-          {/*          color: 'black',*/}
-          {/*          minWidth: 200,*/}
-          {/*        }}*/}
-          {/*    >*/}
-          {/*      Straight*/}
-          {/*    </Button>*/}
-          {/*  </ButtonGroup>*/}
+            {posts.length > 0 ? (
+                <Box display="flex" flexDirection="column" alignItems="center">
+                  <List>
+                    <DrawsList draws={posts} />
+                  </List>
+                </Box>
+            ) : (
+                <Typography sx={{ textAlign: 'center', mt: 2 }}>No posts available</Typography>
+            )}
+          </TabPanel>
 
-            {/*<Button*/}
-            {/*    variant="contained"*/}
-            {/*    disabled={loading}*/}
-            {/*    size="large"*/}
-            {/*    onClick={handleCheck}*/}
-            {/*    sx={{*/}
-            {/*      mt: 3,*/}
-            {/*      mb: 1,*/}
-            {/*      background: 'linear-gradient(to right, #f8f9fa, #e9ecef)',*/}
-            {/*      color: 'black',*/}
-            {/*      minWidth: 200,*/}
-            {/*    }}*/}
-            {/*>*/}
-            {/*  Check*/}
-            {/*</Button>*/}
-
-          {/*  {numbers && numbers.length > 0 && (*/}
-          {/*      <Box display="flex" flexDirection="column" alignItems="center">*/}
-          {/*        <Button*/}
-          {/*            variant="contained"*/}
-          {/*            size="large"*/}
-          {/*            onClick={handleClear}*/}
-          {/*            sx={{*/}
-          {/*              mt: 2,*/}
-          {/*              background: 'linear-gradient(to right, #ef233c, #d90429)',*/}
-          {/*              color: 'black',*/}
-          {/*            }}*/}
-          {/*        >*/}
-          {/*          Clear*/}
-          {/*        </Button>*/}
-          {/*        <List>*/}
-          {/*          <NumbersList combinations={numbers} />*/}
-          {/*        </List>*/}
-          {/*      </Box>*/}
-          {/*  )}*/}
-
-
-
-          {/*</Item>*/}
-          <PlayComboInfo/>
-          {display && (
-              <StatsDisplay display={display} />
-          )}
-
+          {/* Expand section (shown on both tabs) */}
           <Box sx={{ textAlign: 'center', mt: 1 }}>
             <ExpandButton
                 onClick={() => setExpandSection(!expandSection)}
@@ -354,16 +177,6 @@ const HomePage = () => {
               <PostCreationButtons />
             </Item>
           </Collapse>
-
-          {posts.length > 0 ? (
-              <Box display="flex" flexDirection="column" alignItems="center">
-                <List>
-                  <DrawsListSorted draws={posts} />
-                </List>
-              </Box>
-          ) : (
-              <Typography sx={{ textAlign: 'center', mt: 2 }}>No posts available</Typography>
-          )}
         </Container>
       </Box>
   );

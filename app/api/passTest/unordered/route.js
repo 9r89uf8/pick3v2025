@@ -14,128 +14,96 @@ export async function GET() {
         const draws = [];
         snapshot.forEach((doc) => {
             const drawData = doc.data();
-            // Ensure the required fields exist before pushing
+            // Ensure all required fields exist before pushing
             if (drawData.originalFirstNumber !== undefined &&
                 drawData.originalSecondNumber !== undefined &&
-                drawData.originalThirdNumber !== undefined) {
+                drawData.originalThirdNumber !== undefined &&
+                drawData.fireball !== undefined) {
                 draws.push(drawData);
             } else {
-                console.warn(`Skipping draw doc ID ${doc.id} due to missing number fields.`);
+                console.warn(`Skipping draw doc ID ${doc.id} due to missing number fields or fireball.`);
             }
         });
 
-        let validDrawsAnalyzed = 0; // Count draws meeting the criteria
-        let distributions = {
-            LMH: 0, LHM: 0, MLH: 0,
-            MHL: 0, HLM: 0, HML: 0
-        };
+        // Track statistics
+        let originalPassingDraws = 0;
+        let totalPassingCombinations = 0;
+        let drawsWithAtLeastOnePass = 0;
 
-        let movementDistributions = {
-            BUB: 0, BBU: 0, UBB: 0, UBU: 0
-        };
+        // Function to check if a combination passes the criteria
+        function checkCombination(combination) {
+            // --- Condition 1: Check for repeating numbers ---
+            const uniqueNums = new Set(combination);
+            if (uniqueNums.size !== combination.length) {
+                return false; // Combination fails if it has duplicates
+            }
 
-        // Initialize counters for L, M, and H positions
-        let lPositions = { firstPosition: 0, secondPosition: 0, thirdPosition: 0 };
-        let mPositions = { firstPosition: 0, secondPosition: 0, thirdPosition: 0 };
-        let hPositions = { firstPosition: 0, secondPosition: 0, thirdPosition: 0 };
+            // --- Condition 2 & 3: Check for numbers in specific ranges ---
+            let hasNumberInRange0to2 = false;
+            let hasNumberInRange7to9 = false;
+
+            for (const num of combination) {
+                if (num >= 0 && num <= 2) {
+                    hasNumberInRange0to2 = true;
+                }
+                if (num >= 7 && num <= 9) {
+                    hasNumberInRange7to9 = true;
+                }
+            }
+
+            // Pass only if both range conditions are met
+            return hasNumberInRange0to2 && hasNumberInRange7to9;
+        }
 
         // Loop through all fetched draws
         for (let i = 0; i < draws.length; i++) {
             let draw = draws[i];
-            let nums = [
+            let originalNums = [
                 draw.originalFirstNumber,
                 draw.originalSecondNumber,
                 draw.originalThirdNumber
             ];
+            let fireballNum = draw.fireball;
 
-            // --- Condition 1: Check for repeating numbers ---
-            const uniqueNums = new Set(nums);
-            if (uniqueNums.size !== nums.length) {
-                continue; // Skip this draw if it contains duplicates
+            // Check if original combination passes
+            const originalPasses = checkCombination(originalNums);
+            if (originalPasses) {
+                originalPassingDraws++;
             }
 
-            // --- Movement Distribution Analysis ---
-            let movementPattern = "";
-            for (let num of nums) {
-                if (num >= 0 && num <= 4) {
-                    movementPattern += "B";
-                } else if (num >= 5 && num <= 9) {
-                    movementPattern += "U";
+            // Generate all combinations (original + 3 replacements with fireball)
+            let allCombinations = [
+                [...originalNums], // Original combination
+                [fireballNum, originalNums[1], originalNums[2]], // Replace first number
+                [originalNums[0], fireballNum, originalNums[2]], // Replace second number
+                [originalNums[0], originalNums[1], fireballNum]  // Replace third number
+            ];
+
+            let passingCombinationsForThisDraw = 0;
+
+            // Check each combination
+            for (const combination of allCombinations) {
+                if (checkCombination(combination)) {
+                    passingCombinationsForThisDraw++;
+                    totalPassingCombinations++;
                 }
             }
 
-            // Increment the counter for this pattern if it exists in our object
-            if (movementDistributions.hasOwnProperty(movementPattern)) {
-                movementDistributions[movementPattern]++;
+            // If at least one combination passes, increment the draw counter
+            if (passingCombinationsForThisDraw > 0) {
+                drawsWithAtLeastOnePass++;
             }
-
-            // --- Condition 2: Determine L, M, H based on relative values ---
-            // Pair numbers with their original positions (0, 1, 2)
-            const indexedNums = [
-                { value: nums[0], originalIndex: 0 },
-                { value: nums[1], originalIndex: 1 },
-                { value: nums[2], originalIndex: 2 }
-            ];
-
-            // Sort by value to find Lowest (L), Middle (M), Highest (H)
-            const sortedNums = [...indexedNums].sort((a, b) => a.value - b.value);
-            // sortedNums[0] is L, sortedNums[1] is M, sortedNums[2] is H
-
-            // Determine the pattern based on the *original* positions of L, M, H
-            let patternArray = ['', '', '']; // Represents [pos1, pos2, pos3]
-            patternArray[sortedNums[0].originalIndex] = 'L'; // Place L in its original slot
-            patternArray[sortedNums[1].originalIndex] = 'M'; // Place M in its original slot
-            patternArray[sortedNums[2].originalIndex] = 'H'; // Place H in its original slot
-            const pattern = patternArray.join(''); // e.g., "MHL", "LMH"
-
-            // Check if the generated pattern is one of the expected 6 (it always should be if nums are unique)
-            if (distributions.hasOwnProperty(pattern)) {
-                distributions[pattern]++; // Increment count for this pattern
-
-                // --- Track L, M, and H positions ---
-                // The pattern string itself tells us the position:
-                // pattern[0] is the label (L/M/H) for the first original number
-                // pattern[1] is the label for the second original number
-                // pattern[2] is the label for the third original number
-
-                // L position
-                const lIndex = pattern.indexOf('L');
-                if (lIndex === 0) lPositions.firstPosition++;
-                else if (lIndex === 1) lPositions.secondPosition++;
-                else if (lIndex === 2) lPositions.thirdPosition++;
-
-                // M position
-                const mIndex = pattern.indexOf('M');
-                if (mIndex === 0) mPositions.firstPosition++;
-                else if (mIndex === 1) mPositions.secondPosition++;
-                else if (mIndex === 2) mPositions.thirdPosition++;
-
-                // H position
-                const hIndex = pattern.indexOf('H');
-                if (hIndex === 0) hPositions.firstPosition++;
-                else if (hIndex === 1) hPositions.secondPosition++;
-                else if (hIndex === 2) hPositions.thirdPosition++;
-
-                validDrawsAnalyzed++; // Increment count of valid draws analyzed
-
-            } else {
-                // This case should theoretically not happen if numbers are unique
-                console.warn(`Generated unexpected pattern: ${pattern} for draw ${nums}. Skipping count.`);
-            }
-        } // End of loop through draws
+        }
 
         // Prepare the final result object
         const result = {
             totalDrawsFetched: draws.length,
-            validDrawsAnalyzed: validDrawsAnalyzed, // Draws meeting uniqueness criteria
-            definition: "L=Lowest, M=Middle, H=Highest number in draw", // Added definition for clarity
-            distributions: distributions,
-            lPositions: lPositions,
-            mPositions: mPositions,
-            hPositions: hPositions,
-            movementDefinition: "B=Below range (0-4), U=Upper range (5-9)",
-            movementDistributions: movementDistributions
+            originalPassingDraws: originalPassingDraws,
+            totalPassingCombinations: totalPassingCombinations,
+            drawsWithAtLeastOnePass: drawsWithAtLeastOnePass,
+            percentageOfDrawsWithPass: ((drawsWithAtLeastOnePass / draws.length) * 100).toFixed(2) + '%'
         };
+
         console.log("Analysis Result:", JSON.stringify(result, null, 2)); // Pretty print log
 
         // Return the result as a JSON response

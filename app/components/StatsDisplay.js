@@ -265,138 +265,62 @@ const MonthlyStats = ({ data, title }) => {
                     </Grid>
                 </Grid>
 
-                {/* Detailed Fireball Statistics */}
+                {/* Pattern Distribution */}
                 {/*<SectionHeader*/}
-                {/*    title="Fireball Substitution Details"*/}
-                {/*    subtitle="Deep dive into fireball performance"*/}
-                {/*    icon={Insights}*/}
+                {/*    title="Pattern Distribution"*/}
+                {/*    subtitle="BBA and BAA patterns breakdown"*/}
+                {/*    icon={Pattern}*/}
                 {/*/>*/}
 
-                {/*<Grid container spacing={3} sx={{ mb: 5 }}>*/}
-                {/*    <Grid item xs={12} sm={6} md={3}>*/}
-                {/*        <SimpleStatCard*/}
-                {/*            title="Total Substitutions Passed"*/}
-                {/*            value={data.totalFireballSubstitutionsPassed}*/}
-                {/*            color="#4caf50"*/}
-                {/*            icon={BarChart}*/}
-                {/*            subText={`Out of ${data.totalFireballSubstitutionsChecked || 0} checked`}*/}
-                {/*        />*/}
+                {/*<Grid container spacing={3}>*/}
+                {/*    <Grid item xs={12} md={6}>*/}
+                {/*        <Grid container spacing={2}>*/}
+                {/*            <Grid item xs={12} sm={6}>*/}
+                {/*                <SimpleStatCard*/}
+                {/*                    title="Regular BBA"*/}
+                {/*                    value={data.countBBA}*/}
+                {/*                    color="#90caf9"*/}
+                {/*                    subText="From regular draws"*/}
+                {/*                />*/}
+                {/*            </Grid>*/}
+                {/*            <Grid item xs={12} sm={6}>*/}
+                {/*                <SimpleStatCard*/}
+                {/*                    title="Regular BAA"*/}
+                {/*                    value={data.countBAA}*/}
+                {/*                    color="#a5d6a7"*/}
+                {/*                    subText="From regular draws"*/}
+                {/*                />*/}
+                {/*            </Grid>*/}
+                {/*        </Grid>*/}
                 {/*    </Grid>*/}
-                {/*    <Grid item xs={12} sm={6} md={3}>*/}
-                {/*        <SimpleStatCard*/}
-                {/*            title="Substitution Pass Rate"*/}
-                {/*            value={`${data.fireballSubstitutionPassRate?.toFixed(1)}%`}*/}
-                {/*            color="#ff5722"*/}
-                {/*            icon={TrendingUp}*/}
-                {/*        />*/}
-                {/*    </Grid>*/}
-                {/*    <Grid item xs={12} sm={6} md={3}>*/}
-                {/*        <SimpleStatCard*/}
-                {/*            title="Average per Draw"*/}
-                {/*            value={data.averageFireballPassesPerDraw?.toFixed(1)}*/}
-                {/*            color="#2196f3"*/}
-                {/*            icon={Pattern}*/}
-                {/*            subText="Successful substitutions"*/}
-                {/*        />*/}
-                {/*    </Grid>*/}
-                {/*    <Grid item xs={12} sm={6} md={3}>*/}
-                {/*        <SimpleStatCard*/}
-                {/*            title="Draws with Any Pass"*/}
-                {/*            value={data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed}*/}
-                {/*            color="#9c27b0"*/}
-                {/*            icon={AutoAwesome}*/}
-                {/*            subText={`${(((data.drawsWithAtLeastOneFireballPass || data.totalFireballPassed) / data.totalDraws * 100) || 0).toFixed(1)}%`}*/}
-                {/*        />*/}
+                {/*    <Grid item xs={12} md={6}>*/}
+                {/*        <Grid container spacing={2}>*/}
+                {/*            <Grid item xs={12} sm={6}>*/}
+                {/*                <SimpleStatCard*/}
+                {/*                    title="Fireball BBA"*/}
+                {/*                    value={data.fireballBBACount}*/}
+                {/*                    color="#ffcc80"*/}
+                {/*                    subText="From fireball substitutions"*/}
+                {/*                />*/}
+                {/*            </Grid>*/}
+                {/*            <Grid item xs={12} sm={6}>*/}
+                {/*                <SimpleStatCard*/}
+                {/*                    title="Fireball BAA"*/}
+                {/*                    value={data.fireballBAACount}*/}
+                {/*                    color="#80cbc4"*/}
+                {/*                    subText="From fireball substitutions"*/}
+                {/*                />*/}
+                {/*            </Grid>*/}
+                {/*        </Grid>*/}
                 {/*    </Grid>*/}
                 {/*</Grid>*/}
 
-                {/* Pattern Distribution */}
-                <SectionHeader
-                    title="Pattern Distribution"
-                    subtitle="BBA and BAA patterns breakdown"
-                    icon={Pattern}
-                />
-
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                                <SimpleStatCard
-                                    title="Regular BBA"
-                                    value={data.countBBA}
-                                    color="#90caf9"
-                                    subText="From regular draws"
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <SimpleStatCard
-                                    title="Regular BAA"
-                                    value={data.countBAA}
-                                    color="#a5d6a7"
-                                    subText="From regular draws"
-                                />
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                                <SimpleStatCard
-                                    title="Fireball BBA"
-                                    value={data.fireballBBACount}
-                                    color="#ffcc80"
-                                    subText="From fireball substitutions"
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <SimpleStatCard
-                                    title="Fireball BAA"
-                                    value={data.fireballBAACount}
-                                    color="#80cbc4"
-                                    subText="From fireball substitutions"
-                                />
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>
-
-                {/* Summary Box */}
-                {/*<Box*/}
-                {/*    sx={{*/}
-                {/*        mt: 4,*/}
-                {/*        p: 3,*/}
-                {/*        background: 'rgba(255, 255, 255, 0.02)',*/}
-                {/*        borderRadius: 2,*/}
-                {/*        border: '1px solid rgba(255, 255, 255, 0.08)',*/}
-                {/*    }}*/}
-                {/*>*/}
-                {/*    <Typography variant="h6" sx={{ color: '#ffc300', mb: 2, fontWeight: 600 }}>*/}
-                {/*        Summary*/}
-                {/*    </Typography>*/}
-                {/*    <Grid container spacing={2}>*/}
-                {/*        <Grid item xs={12} sm={4}>*/}
-                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
-                {/*                <strong>Total Passed:</strong> {data.totalPassed + (data.totalFireballPassed || 0)}*/}
-                {/*            </Typography>*/}
-                {/*        </Grid>*/}
-                {/*        <Grid item xs={12} sm={4}>*/}
-                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
-                {/*                <strong>All BBA:</strong> {(data.countBBA || 0) + (data.fireballBBACount || 0)}*/}
-                {/*            </Typography>*/}
-                {/*        </Grid>*/}
-                {/*        <Grid item xs={12} sm={4}>*/}
-                {/*            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>*/}
-                {/*                <strong>All BAA:</strong> {(data.countBAA || 0) + (data.fireballBAACount || 0)}*/}
-                {/*            </Typography>*/}
-                {/*        </Grid>*/}
-                {/*    </Grid>*/}
-                {/*</Box>*/}
             </CardContent>
         </StyledCard>
     );
 };
 
-const StatsDisplay = ({ display }) => {
+const StatsDisplay = ({ display, getter}) => {
     const [value, setValue] = useState(0);
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
@@ -404,7 +328,7 @@ const StatsDisplay = ({ display }) => {
     const handleDisplay = async () => {
         setLoading(true);
         try {
-            await setDisplayInfo();
+            await getter();
         } catch (error) {
             console.error('Failed to update stats:', error);
         } finally {

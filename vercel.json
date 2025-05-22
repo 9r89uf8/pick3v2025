@@ -9,12 +9,20 @@
       "schedule": "20 18 * * *"
     },
     {
+      "path": "/api/display/createUnordered",
+      "schedule": "22 18 * * *"
+    },
+    {
       "path": "/api/aws/single",
       "schedule": "15 4 * * *"
     },
     {
       "path": "/api/display/create",
       "schedule": "20 4 * * *"
+    },
+    {
+      "path": "/api/display/createUnordered",
+      "schedule": "22 18 * * *"
     }
   ]
 }

@@ -1,5 +1,4 @@
 // app/api/posts/route.js
-//540 possible combinations
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
@@ -14,13 +13,10 @@ const getCurrentMonth = () => {
     return monthNames[currentMonthIndex];
 };
 
-
 // Check if combination has any repeating numbers
 function hasRepeatingNumbers(array) {
     return new Set(array).size !== array.length;
 }
-
-
 
 // Check if a draw contains excluded numbers (by position)
 function hasExcludedNumbers(draw, excludedNumbers) {
@@ -31,6 +27,20 @@ function hasExcludedNumbers(draw, excludedNumbers) {
     // Check third position
     if (excludedNumbers.third.includes(draw[2])) return true;
     return false;
+}
+
+// Generate a random number between min and max (inclusive)
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Generate three distinct random numbers between 0 and 9
+function generateThreeDistinctNumbers() {
+    const numbers = new Set();
+    while (numbers.size < 3) {
+        numbers.add(getRandomInt(0, 9));
+    }
+    return Array.from(numbers);
 }
 
 // ===========================================================
@@ -46,15 +56,10 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
          5) (H, L, M)
          6) (H, M, L)
       where:
-        L in [0..3], M in [2..7], H in [6..9]
-
-      Also, we CANNOT reuse the same number in the same position across draws.
+        L is the lowest number in the draw
+        M is the median number in the draw
+        H is the highest number in the draw
     */
-
-    // The sets from which we pick actual L, M, and H values:
-    const L_vals = [0, 1, 2];
-    const M_vals = [3, 4, 5, 6];
-    const H_vals = [7, 8, 9];
 
     // The 6 permutations we want to fulfill exactly once each:
     const permutations = [
@@ -66,7 +71,7 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
         ["H", "M", "L"], // #6
     ];
 
-    // To ensure “no two draws can have the same number in the same position”:
+    // To ensure "no two draws can have the same number in the same position":
     // We'll track used values for each column.
     const usedInPosition = [new Set(), new Set(), new Set()];
 
@@ -74,49 +79,48 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
     const MAX_ATTEMPTS = 2000;
     let attempts = 0;
 
-    // Helper to pick a random item from an array
-    function pickRandom(arr) {
-        const idx = Math.floor(Math.random() * arr.length);
-        return arr[idx];
-    }
-
     // For each of the 6 permutations, we attempt to find a valid triple (a,b,c).
-    // We'll do a “retry” approach if we fail to find a valid assignment.
+    // We'll do a "retry" approach if we fail to find a valid assignment.
     for (let permIndex = 0; permIndex < permutations.length; permIndex++) {
         const [pos1Cat, pos2Cat, pos3Cat] = permutations[permIndex];
         let foundValid = false;
 
         // We try picking random values (with a limit on attempts to avoid infinite loop).
         for (let localTry = 0; localTry < 500; localTry++) {
-            // 1) pick an L, M, H candidate respecting the category for each position
+            // Generate three distinct random numbers
+            const threeNumbers = generateThreeDistinctNumbers();
+
+            // Sort them to determine L, M, H values
+            const sortedNumbers = [...threeNumbers].sort((a, b) => a - b);
+            const L = sortedNumbers[0]; // Lowest
+            const M = sortedNumbers[1]; // Middle/Median
+            const H = sortedNumbers[2]; // Highest
+
+            // Create the candidate based on the permutation pattern
             let val1, val2, val3;
 
-            // pick the correct sets for each position’s category
-            if (pos1Cat === "L") val1 = pickRandom(L_vals);
-            if (pos1Cat === "M") val1 = pickRandom(M_vals);
-            if (pos1Cat === "H") val1 = pickRandom(H_vals);
+            // Assign the correct values based on position category
+            if (pos1Cat === "L") val1 = L;
+            if (pos1Cat === "M") val1 = M;
+            if (pos1Cat === "H") val1 = H;
 
-            if (pos2Cat === "L") val2 = pickRandom(L_vals);
-            if (pos2Cat === "M") val2 = pickRandom(M_vals);
-            if (pos2Cat === "H") val2 = pickRandom(H_vals);
+            if (pos2Cat === "L") val2 = L;
+            if (pos2Cat === "M") val2 = M;
+            if (pos2Cat === "H") val2 = H;
 
-            if (pos3Cat === "L") val3 = pickRandom(L_vals);
-            if (pos3Cat === "M") val3 = pickRandom(M_vals);
-            if (pos3Cat === "H") val3 = pickRandom(H_vals);
+            if (pos3Cat === "L") val3 = L;
+            if (pos3Cat === "M") val3 = M;
+            if (pos3Cat === "H") val3 = H;
 
             const candidate = [val1, val2, val3];
 
-            // Check #1: distinct numbers in the triple?
-            if (hasRepeatingNumbers(candidate)) continue;
-
-            // Check #2: not used in the same position
+            // Check #1: not used in the same position
             if (usedInPosition[0].has(val1)) continue;
             if (usedInPosition[1].has(val2)) continue;
             if (usedInPosition[2].has(val3)) continue;
 
-            // Check #3: excluded numbers by position
+            // Check #2: excluded numbers by position
             if (hasExcludedNumbers(candidate, excludedNumbers)) continue;
-
 
             // If we passed all checks, we accept this triple
             draws.push(candidate);
@@ -154,12 +158,7 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
 }
 
 // Function to generate extra draws with modified constraints
-// Function to generate extra draws with modified constraints
 function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { first: [], second: [], third: [] }, usedPositions) {
-    const L_vals = [0, 1, 2];
-    const M_vals = [3, 4, 5, 6];
-    const H_vals = [7, 8, 9];
-
     const extraPermutations = [
         ["L","M","H"],
         ["L","H","M"],
@@ -175,21 +174,8 @@ function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { 
 
     const positionUsage = usedPositions.map(set => new Set(set));
 
-    function pickRandom(arr, excludeValues = []) {
-        const availableValues = arr.filter(val => !excludeValues.includes(val));
-        if (availableValues.length === 0) return null;
-        const idx = Math.floor(Math.random() * availableValues.length);
-        return availableValues[idx];
-    }
-
     function canUseNumber(num) {
         return !numberUsage[num] || numberUsage[num] < 3;
-    }
-
-    function hasExcludedNumbers(candidate, excludedNumbers) {
-        return candidate[0] === excludedNumbers.first ||
-            candidate[1] === excludedNumbers.second ||
-            candidate[2] === excludedNumbers.third;
     }
 
     const extraDraws = [];
@@ -210,38 +196,30 @@ function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { 
         let foundValid = false;
 
         while (attempts < MAX_ATTEMPTS && !foundValid) {
+            // Generate three distinct random numbers
+            const threeNumbers = generateThreeDistinctNumbers();
+
+            // Sort them to determine L, M, H values
+            const sortedNumbers = [...threeNumbers].sort((a, b) => a - b);
+            const L = sortedNumbers[0]; // Lowest
+            const M = sortedNumbers[1]; // Middle/Median
+            const H = sortedNumbers[2]; // Highest
+
+            // Create the candidate based on the permutation pattern
             let val1, val2, val3;
-            let usedInThisDraw = [];
 
-            // Pick values based on categories (L, M, H), excluding already used numbers in this draw
-            if (pos1Cat === "L") val1 = pickRandom(L_vals);
-            if (pos1Cat === "M") val1 = pickRandom(M_vals);
-            if (pos1Cat === "H") val1 = pickRandom(H_vals);
+            // Assign the correct values based on position category
+            if (pos1Cat === "L") val1 = L;
+            if (pos1Cat === "M") val1 = M;
+            if (pos1Cat === "H") val1 = H;
 
-            if (val1 === null) {
-                attempts++;
-                continue;
-            }
-            usedInThisDraw.push(val1);
+            if (pos2Cat === "L") val2 = L;
+            if (pos2Cat === "M") val2 = M;
+            if (pos2Cat === "H") val2 = H;
 
-            if (pos2Cat === "L") val2 = pickRandom(L_vals, usedInThisDraw);
-            if (pos2Cat === "M") val2 = pickRandom(M_vals, usedInThisDraw);
-            if (pos2Cat === "H") val2 = pickRandom(H_vals, usedInThisDraw);
-
-            if (val2 === null) {
-                attempts++;
-                continue;
-            }
-            usedInThisDraw.push(val2);
-
-            if (pos3Cat === "L") val3 = pickRandom(L_vals, usedInThisDraw);
-            if (pos3Cat === "M") val3 = pickRandom(M_vals, usedInThisDraw);
-            if (pos3Cat === "H") val3 = pickRandom(H_vals, usedInThisDraw);
-
-            if (val3 === null) {
-                attempts++;
-                continue;
-            }
+            if (pos3Cat === "L") val3 = L;
+            if (pos3Cat === "M") val3 = M;
+            if (pos3Cat === "H") val3 = H;
 
             const candidate = [val1, val2, val3];
 
@@ -284,7 +262,7 @@ function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { 
 // Modified POST handler
 export async function POST(req) {
     try {
-        const { excludedNumbers = { first: [], second: [], third: [] } } = await req.json();
+        const excludedNumbers = { first: [], second: [], third: [] }
         let month = getCurrentMonth();
         const firestore = adminDb.firestore();
 

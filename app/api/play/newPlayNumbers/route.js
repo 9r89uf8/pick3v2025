@@ -1,39 +1,10 @@
 // app/api/posts/route.js
-// 36 possible combinations (3 x 4 x 3)
+// Dynamic combinations where middle number is between first and last
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const getMonths = () => {
-    const currentDate = new Date();
-    const currentMonthIndex = currentDate.getMonth();
-
-    let twoMonthsAgoIndex;
-    let previousMonthIndex;
-
-    if (currentMonthIndex === 0) {  // January
-        twoMonthsAgoIndex = 10;     // November of the previous year
-        previousMonthIndex = 11;    // December of the previous year
-    } else if (currentMonthIndex === 1) {  // February
-        twoMonthsAgoIndex = 11;     // December of the previous year
-        previousMonthIndex = 0;     // January
-    } else {
-        twoMonthsAgoIndex = currentMonthIndex - 2;
-        previousMonthIndex = currentMonthIndex - 1;
-    }
-
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return [monthNames[previousMonthIndex], monthNames[currentMonthIndex], monthNames[twoMonthsAgoIndex]];
-};
-
-function isExcluded(num, position, excludedNumbers) {
-    if (position === 0) return excludedNumbers.first.includes(num);
-    if (position === 1) return excludedNumbers.second.includes(num);
-    if (position === 2) return excludedNumbers.third.includes(num);
-    return false;
-}
 
 // Helper: Shuffle an array in place
 function shuffle(array) {
@@ -45,16 +16,13 @@ function shuffle(array) {
 }
 
 // Pre-generate all possible combinations based on the allowed ranges
-function generateAllCombinations(excludedNumbers) {
+function generateAllCombinations() {
     const combinations = [];
-    // first: 0-2, second: 3-6, third: 7-9
+    // first: 0-2, third: 7-9, second: between first and third
     for (let first = 0; first < 3; first++) {
-        if (isExcluded(first, 0, excludedNumbers)) continue;
-        for (let second = 3; second < 7; second++) {
-            if (isExcluded(second, 1, excludedNumbers)) continue;
-            for (let third = 7; third < 10; third++) {
-                if (isExcluded(third, 2, excludedNumbers)) continue;
-                // The ranges are disjoint so the numbers are always distinct and in ascending order.
+        for (let third = 7; third < 10; third++) {
+            // Middle number must be between first and third (exclusive)
+            for (let second = first + 1; second < third; second++) {
                 combinations.push([first, second, third]);
             }
         }
@@ -63,9 +31,9 @@ function generateAllCombinations(excludedNumbers) {
 }
 
 // Generate draws by selecting from the pre-generated pool while enforcing positional uniqueness
-function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
+function generateDraws(numberOfDraws = 5) {
     // Generate the full pool of valid combinations
-    let pool = generateAllCombinations(excludedNumbers);
+    let pool = generateAllCombinations();
     // Shuffle the pool to ensure randomness
     pool = shuffle(pool);
 
@@ -116,46 +84,8 @@ function generateDraws(numberOfDraws = 5, latestDraw, excludedNumbers) {
 // Modified POST handler
 export async function POST(req) {
     try {
-        const [prevMonth, currentMonth] = getMonths();
-        const firestore = adminDb.firestore();
-        const { excludedNumbers = { first: [], second: [], third: [] } } = await req.json();
-
-        // Query for current and previous month
-        const drawsCollection = firestore
-            .collection("draws")
-            .where("drawMonth", "in", [currentMonth, prevMonth]);
-
-        const snapshot = await drawsCollection.get();
-
-        if (snapshot.empty) {
-            return new Response(JSON.stringify({ error: "No draws found." }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
-        const allDraws = [];
-
-        // First pass: collect all draws with monthOrder
-        snapshot.forEach((doc) => {
-            const drawData = doc.data();
-            drawData.id = doc.id;
-            drawData.monthOrder = drawData.drawMonth === currentMonth ? 1 : 2;
-            allDraws.push(drawData);
-        });
-
-        // Sort draws by monthOrder and index
-        allDraws.sort((a, b) => {
-            if (a.monthOrder !== b.monthOrder) {
-                return a.monthOrder - b.monthOrder;
-            }
-            return b.index - a.index;
-        });
-
-        const draws = allDraws.slice(0, 4);
-
         // Generate new draws using the pre-generated combination approach.
-        const drawsS = generateDraws(3, draws[0], excludedNumbers);
+        const drawsS = generateDraws(3);
 
         return new Response(JSON.stringify(drawsS), {
             status: 200,

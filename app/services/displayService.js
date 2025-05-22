@@ -21,10 +21,54 @@ export const setDisplayInfo = async () => {
     }
 };
 
+export const setDisplayInfoUnordered = async () => {
+    const setDisplay = useStore.getState().setDisplayUnordered;
+    try {
+        const response = await fetch('/api/display/createUnordered',{
+            method: 'GET',
+            cache: 'no-store'
+        });
+
+        if (response.ok) {
+            const numbers = await response.json();
+            setDisplay(numbers);
+            return numbers;
+        } else {
+            throw new Error('Failed to fetch posts');
+        }
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
 export const getDisplayInfo = async () => {
     const setDisplay = useStore.getState().setDisplay;
+
     try {
         const response = await fetch('/api/display/get',{
+            method: 'GET',
+            cache: 'no-store'
+        });
+
+        if (response.ok) {
+            const numbers = await response.json();
+            setDisplay(numbers);
+            return numbers;
+        } else {
+            throw new Error('Failed to fetch posts');
+        }
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+export const getDisplayInfoUnordered = async () => {
+    const setDisplay = useStore.getState().setDisplayUnordered;
+
+    try {
+        const response = await fetch('/api/display/getUnordered',{
             method: 'GET',
             cache: 'no-store'
         });
