@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/display/createUnordered",
-      "schedule": "22 18 * * *"
+      "schedule": "22 4 * * *"
     }
   ]
 }
