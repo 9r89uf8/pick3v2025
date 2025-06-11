@@ -5,13 +5,15 @@ import DrawsList from "@/app/components/DrawsList";
 import DrawsListSortedX from "@/app/components/DrawsListSortedX";
 import DrawsListSorted from "@/app/components/DrawsListSorted";
 import PlayComboInfo from "@/app/components/PlayComboInfo";
-import PlayComboInfoUnordered from "@/app/components/PlayComboInfoUnordered";
+import PlayStraightInfo from "@/app/components/PlayComboInfoUnordered";
 import Stats from "@/app/components/Stats";
 import MarkovSecondOrder from "@/app/components/MarkovSecondOrder";
 import MarkovFirstOrder from "@/app/components/MarkovFirstOrder";
 import ProbabilityTable from "@/app/components/ProbabilityTable";
 import StatsDisplay from "@/app/components/StatsDisplay";
 import { setDisplayInfo, setDisplayInfoUnordered } from "@/app/services/displayService";
+import Analysis from "@/app/components/Analysis";
+import FireballAnalysis from "@/app/components/FireballAnalysis";
 import {
   Button,
   List,
@@ -35,10 +37,11 @@ import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useStore } from '@/app/store/store';
-import { playCombo, playStraight, checkDraws } from "@/app/services/playService";
+import {playCombo, playStraight, checkDraws, playOptionOne} from "@/app/services/playService";
 import NumbersList from "@/app/components/NumbersList";
 import PostCreationButtons from "@/app/components/PostCreationButtons";
 import { getDisplayInfo, getDisplayInfoUnordered } from "@/app/services/displayService";
+import SportsEsportsOutlinedIcon from "@mui/icons-material/SportsEsportsOutlined";
 
 const Item = styled(Paper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -108,9 +111,44 @@ const HomePage = () => {
     getPosts();
   }, []);
 
+  const handlePlayClick = async () => {
+    try {
+      await checkDraws();
+    } catch (error) {
+      alert("There was an issue starting the play sequence. Please try again.");
+    }
+  };
+
   return (
       <Box sx={{ width: '100%' }}>
         <Container maxWidth="sm">
+          {/*<Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>*/}
+          {/*  <Button*/}
+          {/*      variant="contained"*/}
+          {/*      size="large"*/}
+          {/*      onClick={handlePlayClick}*/}
+          {/*      startIcon={<SportsEsportsOutlinedIcon />}*/}
+          {/*      sx={{*/}
+          {/*        minWidth: '220px',*/}
+          {/*        padding: '12px 24px',*/}
+          {/*        fontWeight: 'bold',*/}
+          {/*        borderRadius: '50px',*/}
+          {/*        background: 'linear-gradient(45deg, #ffc300 30%, #ff8f00 90%)',*/}
+          {/*        color: 'black',*/}
+          {/*        boxShadow: '0 5px 15px rgba(0,0,0,0.2)',*/}
+          {/*        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',*/}
+          {/*        '&:hover': {*/}
+          {/*          background: 'linear-gradient(45deg, #ff8f00 30%, #ffc300 90%)',*/}
+          {/*          transform: 'scale(1.05)',*/}
+          {/*          boxShadow: '0 8px 20px rgba(255,195,0,0.4)',*/}
+          {/*        },*/}
+          {/*      }}*/}
+          {/*  >*/}
+          {/*    check*/}
+          {/*  </Button>*/}
+          {/*</Box>*/}
+
+
           {/* Tabs UI */}
           <AppBar position="static">
             <Tabs
@@ -121,14 +159,16 @@ const HomePage = () => {
                 variant="fullWidth"
                 aria-label="full width tabs example"
             >
-              <Tab label="Option 1" />
-              <Tab label="Option 2" />
+              <Tab label="COMBO" />
+              <Tab label="STRAIGHT" />
             </Tabs>
           </AppBar>
 
           {/* First Tab Content */}
           <TabPanel value={tabValue} index={0}>
             <PlayComboInfo />
+            <Analysis/>
+            <FireballAnalysis/>
             {display && (
                 <StatsDisplay display={display} getter={setDisplayInfo}/>
             )}
@@ -146,7 +186,7 @@ const HomePage = () => {
 
           {/* Second Tab Content */}
           <TabPanel value={tabValue} index={1}>
-            <PlayComboInfoUnordered />
+            <PlayStraightInfo/>
             {display && (
                 <StatsDisplay display={displayUnordered} getter={setDisplayInfoUnordered} />
             )}

@@ -140,6 +140,7 @@ export async function POST(req) {
             );
         }
 
+        console.log(generatedDraws)
         // If successful, generatedDraws will contain [bbaDraw, baaDraw]
         return NextResponse.json(generatedDraws, {
             status: 200,

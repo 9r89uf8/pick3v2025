@@ -25,7 +25,7 @@ export const playOptionOne = async (formData) => {
 export const playOptionTwo = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/newPlayNumbers',{
+        const response = await fetch('/api/play/original',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -49,7 +49,7 @@ export const checkDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/passTest/unordered', {
+        const response = await fetch('/api/test2', {
             method: 'GET',
             cache: 'no-store'
         });

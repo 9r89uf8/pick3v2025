@@ -34,13 +34,21 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Generate three distinct random numbers between 0 and 9
-function generateThreeDistinctNumbers() {
-    const numbers = new Set();
-    while (numbers.size < 3) {
-        numbers.add(getRandomInt(0, 9));
-    }
-    return Array.from(numbers);
+// Generate a combination with one number from 0-2, one from 7-9, and one from 0-9
+function generateValidCombination() {
+    // Get one number from 0-2
+    const lowRangeNum = getRandomInt(0, 2);
+
+    // Get one number from 7-9
+    const highRangeNum = getRandomInt(7, 9);
+
+    // Get the third number from 0-9, but it must be different from the other two
+    let thirdNum;
+    do {
+        thirdNum = getRandomInt(0, 9);
+    } while (thirdNum === lowRangeNum || thirdNum === highRangeNum);
+
+    return [lowRangeNum, highRangeNum, thirdNum];
 }
 
 // ===========================================================
@@ -80,15 +88,14 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
     let attempts = 0;
 
     // For each of the 6 permutations, we attempt to find a valid triple (a,b,c).
-    // We'll do a "retry" approach if we fail to find a valid assignment.
     for (let permIndex = 0; permIndex < permutations.length; permIndex++) {
         const [pos1Cat, pos2Cat, pos3Cat] = permutations[permIndex];
         let foundValid = false;
 
         // We try picking random values (with a limit on attempts to avoid infinite loop).
         for (let localTry = 0; localTry < 500; localTry++) {
-            // Generate three distinct random numbers
-            const threeNumbers = generateThreeDistinctNumbers();
+            // Generate a valid combination with our new rules
+            const threeNumbers = generateValidCombination();
 
             // Sort them to determine L, M, H values
             const sortedNumbers = [...threeNumbers].sort((a, b) => a - b);
@@ -150,116 +157,14 @@ function generateDraws(latestDraw, last50Combinations, excludedNumbers = { first
         }
     }
 
-    if (draws.length < 6) {
+    if (draws.length < 5) {
         throw new Error('Could not generate 6 valid draws after maximum attempts.');
     }
 
     return draws;
 }
 
-// Function to generate extra draws with modified constraints
-function generateExtraDraws(latestDraw, last50Combinations, excludedNumbers = { first: [], second: [], third: [] }, usedPositions) {
-    const extraPermutations = [
-        ["L","M","H"],
-        ["L","H","M"],
-        ["H","L","M"]
-    ];
-
-    const numberUsage = {};
-    for (let pos = 0; pos < 3; pos++) {
-        for (let num of usedPositions[pos]) {
-            numberUsage[num] = (numberUsage[num] || 0) + 1;
-        }
-    }
-
-    const positionUsage = usedPositions.map(set => new Set(set));
-
-    function canUseNumber(num) {
-        return !numberUsage[num] || numberUsage[num] < 3;
-    }
-
-    const extraDraws = [];
-    const MAX_ATTEMPTS = 1000;
-
-    const selectedPermutations = [];
-    while (selectedPermutations.length < 2) {
-        const randomIndex = Math.floor(Math.random() * extraPermutations.length);
-        const perm = extraPermutations[randomIndex];
-        if (!selectedPermutations.some(p =>
-            p[0] === perm[0] && p[1] === perm[1] && p[2] === perm[2])) {
-            selectedPermutations.push(perm);
-        }
-    }
-
-    for (const [pos1Cat, pos2Cat, pos3Cat] of selectedPermutations) {
-        let attempts = 0;
-        let foundValid = false;
-
-        while (attempts < MAX_ATTEMPTS && !foundValid) {
-            // Generate three distinct random numbers
-            const threeNumbers = generateThreeDistinctNumbers();
-
-            // Sort them to determine L, M, H values
-            const sortedNumbers = [...threeNumbers].sort((a, b) => a - b);
-            const L = sortedNumbers[0]; // Lowest
-            const M = sortedNumbers[1]; // Middle/Median
-            const H = sortedNumbers[2]; // Highest
-
-            // Create the candidate based on the permutation pattern
-            let val1, val2, val3;
-
-            // Assign the correct values based on position category
-            if (pos1Cat === "L") val1 = L;
-            if (pos1Cat === "M") val1 = M;
-            if (pos1Cat === "H") val1 = H;
-
-            if (pos2Cat === "L") val2 = L;
-            if (pos2Cat === "M") val2 = M;
-            if (pos2Cat === "H") val2 = H;
-
-            if (pos3Cat === "L") val3 = L;
-            if (pos3Cat === "M") val3 = M;
-            if (pos3Cat === "H") val3 = H;
-
-            const candidate = [val1, val2, val3];
-
-            // Check both position-based restrictions and overall usage
-            if (!canUseNumber(val1) || !canUseNumber(val2) || !canUseNumber(val3) ||
-                positionUsage[0].has(val1) || positionUsage[1].has(val2) || positionUsage[2].has(val3)) {
-                attempts++;
-                continue;
-            }
-
-            // Check excluded numbers
-            if (hasExcludedNumbers(candidate, excludedNumbers)) {
-                attempts++;
-                continue;
-            }
-
-            // If all checks pass, add the draw
-            extraDraws.push(candidate);
-
-            // Update both number usage and position tracking
-            numberUsage[val1] = (numberUsage[val1] || 0) + 1;
-            numberUsage[val2] = (numberUsage[val2] || 0) + 1;
-            numberUsage[val3] = (numberUsage[val3] || 0) + 1;
-
-            positionUsage[0].add(val1);
-            positionUsage[1].add(val2);
-            positionUsage[2].add(val3);
-
-            foundValid = true;
-        }
-
-        if (!foundValid) {
-            throw new Error(`Could not generate valid extra draw after ${MAX_ATTEMPTS} attempts`);
-        }
-    }
-
-    return extraDraws;
-}
-
-// Modified POST handler
+// Modified POST handler - now only returns 6 combinations
 export async function POST(req) {
     try {
         const excludedNumbers = { first: [], second: [], third: [] }
@@ -291,24 +196,10 @@ export async function POST(req) {
             return [data.originalFirstNumber, data.originalSecondNumber, data.originalThirdNumber];
         });
 
-        // Generate the main 6 draws
-        const main6 = generateDraws(latestDraw, last50Combinations, excludedNumbers);
+        // Generate exactly 6 draws
+        const draws = generateDraws(latestDraw, last50Combinations, excludedNumbers);
 
-        // Track used positions from main6
-        const usedPositions = [new Set(), new Set(), new Set()];
-        main6.forEach(draw => {
-            usedPositions[0].add(draw[0]);
-            usedPositions[1].add(draw[1]);
-            usedPositions[2].add(draw[2]);
-        });
-
-        // Generate 2 extra draws
-        const extra2 = generateExtraDraws(latestDraw, last50Combinations, excludedNumbers, usedPositions);
-
-        // Combine all draws
-        const allDraws = [...main6, ...extra2];
-
-        return new Response(JSON.stringify(allDraws), {
+        return new Response(JSON.stringify(draws), {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
