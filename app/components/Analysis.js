@@ -195,8 +195,6 @@ const Analysis = () => {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
             <Container maxWidth="lg" sx={{ py: 3 }}>
 
                 {/* --- Toggle Button --- */}
@@ -372,7 +370,6 @@ const Analysis = () => {
                     </Fade>
                 </Collapse>
             </Container>
-        </ThemeProvider>
     );
 };
 

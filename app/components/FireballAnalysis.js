@@ -80,8 +80,6 @@ function FireballAnalysis() {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
             <Container maxWidth="lg" sx={{ my: 2 }}>
                 {/* Toggle Button */}
                 <Box sx={{ textAlign: 'center', mb: 1 }}>
@@ -317,7 +315,6 @@ function FireballAnalysis() {
                     </Paper>
                 </Collapse>
             </Container>
-        </ThemeProvider>
     );
 }
 
