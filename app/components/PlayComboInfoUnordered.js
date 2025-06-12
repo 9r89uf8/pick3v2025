@@ -23,7 +23,7 @@ import {
     TableRow
 } from '@mui/material';
 import { useStore } from '@/app/store/store';
-import { playOptionOne } from "@/app/services/playService";
+import { playOptionTwo } from "@/app/services/playService";
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import SportsEsportsOutlinedIcon from '@mui/icons-material/SportsEsportsOutlined';
 import Looks3OutlinedIcon from '@mui/icons-material/Looks3Outlined';
@@ -126,7 +126,7 @@ const PlayStraightInfo = () => {
 
     const handlePlayClick = async () => {
         try {
-            await playOptionOne();
+            await playOptionTwo();
         } catch (error) {
             alert("There was an issue starting the play sequence. Please try again.");
         }

@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { fetchPosts } from './services/postService';
-import DrawsList from "@/app/components/DrawsList";
+import DrawListStraight from "@/app/components/DrawsList";
 import DrawsListSortedX from "@/app/components/DrawsListSortedX";
 import DrawsListSorted from "@/app/components/DrawsListSorted";
 import PlayComboInfo from "@/app/components/PlayComboInfo";
@@ -188,13 +188,13 @@ const HomePage = () => {
           <TabPanel value={tabValue} index={1}>
             <PlayStraightInfo/>
             {display && (
-                <StatsDisplay display={displayUnordered} getter={setDisplayInfoUnordered} />
+                <StatsDisplay display={display} getter={setDisplayInfo} />
             )}
 
             {posts.length > 0 ? (
                 <Box display="flex" flexDirection="column" alignItems="center">
                   <List>
-                    <DrawsList draws={posts} />
+                    <DrawListStraight draws={posts} />
                   </List>
                 </Box>
             ) : (
