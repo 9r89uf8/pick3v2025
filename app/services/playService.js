@@ -1,9 +1,9 @@
 import { useStore } from '../store/store'; // Ensure you import the correct store
 
-export const playOptionOne = async (formData) => {
+export const playCombo = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/sortedPlay',{
+        const response = await fetch('/api/play/combo',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -22,10 +22,10 @@ export const playOptionOne = async (formData) => {
     }
 };
 
-export const playOptionTwo = async (formData) => {
+export const playStraight = async (formData) => {
     const setNumbers = useStore.getState().setNumbers;
     try {
-        const response = await fetch('/api/play/original',{
+        const response = await fetch('/api/play/straight',{
             method: 'POST',
             cache: 'no-store',
             body: JSON.stringify(formData),
@@ -45,19 +45,21 @@ export const playOptionTwo = async (formData) => {
 };
 
 
-export const checkDraws = async () => {
+export const checkComboDraws = async () => {
     const setCheckLoading = useStore.getState().setCheckLoading;
+    const setTestResults = useStore.getState().setTestResults;
     try {
         setCheckLoading(true)
-        const response = await fetch('/api/test2', {
+        const response = await fetch('/api/test/combo', {
             method: 'GET',
             cache: 'no-store'
         });
 
         if (response.ok) {
             setCheckLoading(false)
-            const posts = await response.json();
-            return posts;
+            const results = await response.json();
+            setTestResults(results);
+            return results;
         } else {
             setCheckLoading(false)
             throw new Error('Failed to check posts');
@@ -68,3 +70,34 @@ export const checkDraws = async () => {
         return [];
     }
 };
+
+export const checkStraightDraws = async () => {
+    const setCheckLoading = useStore.getState().setCheckLoading;
+    const setStraightTestResults = useStore.getState().setStraightTestResults;
+    try {
+        setCheckLoading(true)
+        const response = await fetch('/api/test/straight', {
+            method: 'GET',
+            cache: 'no-store'
+        });
+
+        if (response.ok) {
+            setCheckLoading(false)
+            const results = await response.json();
+            setStraightTestResults(results);
+            return results;
+        } else {
+            setCheckLoading(false)
+            throw new Error('Failed to check straight draws');
+        }
+    } catch (error) {
+        setCheckLoading(false)
+        console.error(error);
+        return [];
+    }
+};
+
+// Legacy function names for backward compatibility
+export const playOptionOne = playCombo;
+export const playOptionTwo = playStraight;
+export const checkDraws = checkComboDraws;

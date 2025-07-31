@@ -1,20 +1,28 @@
 {
   "crons": [
     {
-      "path": "/api/aws/single",
+      "path": "/api/posts/create",
       "schedule": "15 18 * * *"
     },
     {
-      "path": "/api/display/create",
+      "path": "/api/display/combo/create",
       "schedule": "20 18 * * *"
     },
     {
-      "path": "/api/aws/single",
+      "path": "/api/display/straight/create",
+      "schedule": "20 18 * * *"
+    },
+    {
+      "path": "/api/posts/create",
       "schedule": "15 4 * * *"
     },
     {
-      "path": "/api/display/create",
-      "schedule": "20 4 * * *"
+      "path": "/api/display/combo/create",
+      "schedule": "20 18 * * *"
+    },
+    {
+      "path": "/api/display/straight/create",
+      "schedule": "20 18 * * *"
     }
   ]
 }

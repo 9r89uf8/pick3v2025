@@ -6,6 +6,13 @@ export const revalidate = 0;
 
 const BROWSER_WS = process.env.PROXY;
 
+// User agents pool
+const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+];
+
 const getMonths = () => {
     const currentDate = new Date();
     const currentMonthIndex = currentDate.getMonth();
@@ -31,38 +38,214 @@ const getMonths = () => {
 async function scrapePageData(pageNum) {
     console.log(`Processing page ${pageNum}...`);
     const browser = await puppeteer.connect({
-        browserWSEndpoint: BROWSER_WS,
+        browserWSEndpoint: `wss://production-sfo.browserless.io/?token=${BROWSER_WS}`
     });
 
     try {
         const page = await browser.newPage();
-        await page.goto(`https://www.illinoislottery.com/dbg/results/pick3?page=${pageNum}`, {
-            waitUntil: 'networkidle0'
+        
+        // Enhanced stealth configuration
+        const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+        console.log(`Setting user agent for page ${pageNum}:`, userAgent);
+        await page.setUserAgent(userAgent);
+        
+        // Set viewport
+        await page.setViewport({ 
+            width: 1920, 
+            height: 1080,
+            deviceScaleFactor: 1,
+            hasTouch: false,
+            isMobile: false 
         });
-
-        await page.waitForSelector('.results__list-item');
-
-        const divsWithClassDfs = await page.evaluate(() => Array.from(document.querySelectorAll('.results__list-item')).map(elem => {
-            try {
-                return {
-                    dateInfo: elem.querySelector('.dbg-results__date-info')?.textContent || null,
-                    drawInfo: elem.querySelector('.dbg-results__draw-info')?.textContent || null,
-                    fireball: elem.querySelector('.grid-ball--pick3-secondary--selected')?.textContent.trim() || null,
-                    pick: Array.from(elem.querySelectorAll(".grid-ball--pick3-primary")).map(e => {
-                        const num = parseInt(e.textContent.replace(/[^0-9]/g, ""));
-                        return isNaN(num) ? null : num;
-                    }),
-                };
-            } catch (error) {
-                return {
-                    dateInfo: null,
-                    drawInfo: null,
-                    fireball: null,
-                    pick: [null, null, null]
-                };
+        
+        // Add stealth scripts before navigation
+        await page.evaluateOnNewDocument(() => {
+            // Remove webdriver property
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            
+            // Add chrome object
+            window.chrome = {
+                runtime: {},
+                loadTimes: function() {},
+                csi: function() {},
+                app: {}
+            };
+            
+            // Override permissions
+            const originalQuery = window.navigator.permissions.query;
+            if (originalQuery) {
+                window.navigator.permissions.query = (parameters) => (
+                    parameters.name === 'notifications' ?
+                        Promise.resolve({ state: Notification.permission }) :
+                        originalQuery(parameters)
+                );
             }
-        }));
+            
+            // Override plugins
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            
+            // Override languages
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-US', 'en']
+            });
+            
+            // Fix toString
+            window.navigator.permissions.query.toString = () => 'function query() { [native code] }';
+        });
+        
+        // Set extra headers
+        await page.setExtraHTTPHeaders({
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1'
+        });
+        
+        // Enable request interception to block unnecessary resources
+        await page.setRequestInterception(true);
+        page.on('request', (request) => {
+            const resourceType = request.resourceType();
+            const url = request.url();
+            
+            // Block images, stylesheets, fonts, and tracking scripts
+            if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+                request.abort();
+            } else if (url.includes('google-analytics') || url.includes('doubleclick') || url.includes('facebook')) {
+                request.abort();
+            } else {
+                request.continue();
+            }
+        });
+        
+        console.log(`Navigating to page ${pageNum}...`);
+        
+        // Navigate with optimized settings
+        const response = await page.goto(`https://www.illinoislottery.com/dbg/results/pick3?page=${pageNum}`, {
+            waitUntil: 'domcontentloaded', // Faster than networkidle0
+            timeout: 30000
+        });
+        
+        console.log(`Page ${pageNum} loaded with status: ${response.status()}`);
+        
+        // Wait a bit for JavaScript to execute
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Try multiple selectors with shorter timeouts
+        const selectors = [
+            '.results__list-item',
+            '.dbg-results__list-item',
+            '[class*="results__list-item"]',
+            '[class*="result-item"]',
+            '.pick3-results',
+            '[data-game="pick3"]'
+        ];
+        
+        let foundSelector = null;
+        for (const selector of selectors) {
+            try {
+                await page.waitForSelector(selector, { timeout: 5000 });
+                const count = await page.$$eval(selector, els => els.length);
+                if (count > 0) {
+                    foundSelector = selector;
+                    break;
+                }
+            } catch (e) {
+                // Continue trying other selectors
+            }
+        }
+        
+        if (!foundSelector) {
+            foundSelector = '.results__list-item';
+            await page.waitForSelector(foundSelector, { timeout: 15000 });
+        }
 
+        console.log(`Extracting data from page ${pageNum} using selector: ${foundSelector}`);
+        
+        const divsWithClassDfs = await page.evaluate((selector) => {
+            const elements = document.querySelectorAll(selector);
+            console.log(`Found ${elements.length} elements with selector ${selector}`);
+            return Array.from(elements).map(elem => {
+                try {
+                    // Try multiple possible selectors for date/draw info
+                    const dateSelectors = ['.dbg-results__date-info', '.date-info', '[class*="date"]'];
+                    const drawSelectors = ['.dbg-results__draw-info', '.draw-info', '[class*="draw"]'];
+                    const ballSelectors = ['.grid-ball--pick3-primary', '.pick3-ball', '[class*="ball"]'];
+                    const fireballSelectors = ['.grid-ball--pick3-secondary--selected', '.fireball', '[class*="fireball"]'];
+                    
+                    let dateInfo = '';
+                    for (const sel of dateSelectors) {
+                        const el = elem.querySelector(sel);
+                        if (el) {
+                            dateInfo = el.textContent;
+                            break;
+                        }
+                    }
+                    
+                    let drawInfo = '';
+                    for (const sel of drawSelectors) {
+                        const el = elem.querySelector(sel);
+                        if (el) {
+                            drawInfo = el.textContent;
+                            break;
+                        }
+                    }
+                    
+                    let pick = [];
+                    for (const sel of ballSelectors) {
+                        const els = elem.querySelectorAll(sel);
+                        if (els.length > 0) {
+                            pick = Array.from(els).map(e => {
+                                const num = parseInt(e.textContent.replace(/[^0-9]/g, ""));
+                                return isNaN(num) ? null : num;
+                            });
+                            break;
+                        }
+                    }
+                    
+                    let fireball = null;
+                    for (const sel of fireballSelectors) {
+                        const el = elem.querySelector(sel);
+                        if (el) {
+                            fireball = el.textContent.trim();
+                            break;
+                        }
+                    }
+                    
+                    return {
+                        dateInfo,
+                        drawInfo,
+                        pick,
+                        fireball
+                    };
+                } catch (error) {
+                    return {
+                        dateInfo: null,
+                        drawInfo: null,
+                        fireball: null,
+                        pick: [null, null, null]
+                    };
+                }
+            });
+        }, foundSelector);
+
+        console.log(`Extracted ${divsWithClassDfs.length} draws from page ${pageNum}`);
+        if (divsWithClassDfs.length > 0) {
+            console.log(`First draw from page ${pageNum}:`, divsWithClassDfs[0]);
+        }
+        
         return divsWithClassDfs.reverse();
     } finally {
         await browser.close();
@@ -75,35 +258,66 @@ async function processPage(pageNum, currentMonth, previousPicks) {
 
     //dateInfo return example: Jan 2, 2024
 
+    console.log(`Processing ${pageData.length} draws from page ${pageNum} for month ${currentMonth}`);
+    
     for (let i = 0; i < pageData.length; i++) {
         const { dateInfo, drawInfo, pick, fireball } = pageData[i];
-        if (dateInfo?.substring(0, 3) === currentMonth) {
+        const drawMonth = dateInfo?.substring(0, 3);
+        
+        if (i === 0) {
+            console.log(`First draw date: ${dateInfo}, month: ${drawMonth}, looking for: ${currentMonth}`);
+        }
+        
+        if (drawMonth === currentMonth) {
+            // Ensure we have 3 numbers
+            while (pick.length < 3) {
+                pick.push(null);
+            }
             // Original order numbers
             let [originalFirst = null, originalSecond = null, originalThird = null] = pick;
 
-            let r = parseInt(dateInfo?.match(/\d+/)?.[0] || '0')
-            let y = drawInfo?.replace(/[^a-zA-Z]+/g, "") || '';
-            if(y === 'midday') {
-                r = r * 2
-            } else {
-                r = (r * 2) + 1
+            let r = null;
+            let timeOfDay = null;
+            if (dateInfo && drawInfo) {
+                const dateMatch = dateInfo.match(/\d+/);
+                const dayOfMonth = dateMatch ? parseInt(dateMatch[0]) : null;
+                timeOfDay = drawInfo.replace(/[^a-zA-Z]+/g, "").toLowerCase();
+
+                if (dayOfMonth !== null) {
+                    r = timeOfDay === 'midday' ? (dayOfMonth * 2) : (dayOfMonth * 2) + 1;
+                }
             }
 
             // Create sorted version
-            let sortedNumbers = [...pick];
-            if (originalFirst !== null && originalSecond !== null && originalThird !== null) {
+            let sortedNumbers = [...pick].filter(n => n !== null);
+            let sortedFirst = null, sortedSecond = null, sortedThird = null;
+            if (sortedNumbers.length === 3) {
                 sortedNumbers.sort((a, b) => a - b);
+                [sortedFirst, sortedSecond, sortedThird] = sortedNumbers;
+            } else if (sortedNumbers.length === 2) {
+                sortedNumbers.sort((a, b) => a - b);
+                [sortedFirst, sortedSecond] = sortedNumbers;
+                sortedThird = null;
+            } else if (sortedNumbers.length === 1) {
+                sortedFirst = sortedNumbers[0];
+                sortedSecond = null;
+                sortedThird = null;
             }
-            let [sortedFirst, sortedSecond, sortedThird] = sortedNumbers;
 
-            const parsedFireball = fireball ? parseInt(fireball) : null;
+            const parsedFireball = fireball ? parseInt(fireball.replace(/[^0-9]/g, "")) : null;
+            const finalFireball = isNaN(parsedFireball) ? null : parsedFireball;
+
+            // Helper function to check if all numbers are valid
+            const areNumsValid = (n1, n2, n3) => n1 !== null && n2 !== null && n3 !== null;
 
             // Calculate sums
-            const sortedDrawSum = (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
+            const sortedNumsValid = areNumsValid(sortedFirst, sortedSecond, sortedThird);
+            const sortedDrawSum = sortedNumsValid
                 ? sortedFirst + sortedSecond + sortedThird
                 : null;
 
-            const originalDrawSum = (originalFirst !== null && originalSecond !== null && originalThird !== null)
+            const originalNumsValid = areNumsValid(originalFirst, originalSecond, originalThird);
+            const originalDrawSum = originalNumsValid
                 ? originalFirst + originalSecond + originalThird
                 : null;
 
@@ -113,7 +327,7 @@ async function processPage(pageNum, currentMonth, previousPicks) {
                 originalFirstNumber: originalFirst,
                 originalSecondNumber: originalSecond,
                 originalThirdNumber: originalThird,
-                originalDraw: (originalFirst !== null && originalSecond !== null && originalThird !== null)
+                originalDraw: originalNumsValid
                     ? `${originalFirst}${originalSecond}${originalThird}`
                     : null,
                 originalDrawSum,
@@ -159,7 +373,7 @@ async function processPage(pageNum, currentMonth, previousPicks) {
                 sortedFirstNumber: sortedFirst,
                 sortedSecondNumber: sortedSecond,
                 sortedThirdNumber: sortedThird,
-                sortedDraw: (sortedFirst !== null && sortedSecond !== null && sortedThird !== null)
+                sortedDraw: sortedNumsValid
                     ? `${sortedFirst}${sortedSecond}${sortedThird}`
                     : null,
                 sortedDrawSum,
@@ -202,12 +416,12 @@ async function processPage(pageNum, currentMonth, previousPicks) {
                 sortedPreviousThird8: previousPicks.sorted[7]?.[2] ?? null,
 
                 // Common fields
-                fireball: parsedFireball,
+                fireball: finalFireball,
                 year: '2025',
                 drawDate: dateInfo || null,
                 drawMonth: dateInfo ? dateInfo.substring(0, 3) : null,
                 index: r,
-                time: drawInfo ? drawInfo.replace(/[^a-zA-Z]+/g, "") : null,
+                time: timeOfDay,
                 timestamp: adminDb.firestore.Timestamp.now(),
             };
 
@@ -223,6 +437,7 @@ async function processPage(pageNum, currentMonth, previousPicks) {
         }
     }
 
+    console.log(`Found ${draws.length} draws for ${currentMonth} on page ${pageNum}`);
     return { draws, previousPicks };
 }
 
@@ -243,10 +458,11 @@ async function writeBatchToFirestore(draws) {
 
 
 export async function GET(req) {
+    console.log('Puppeteer version:', require('puppeteer-core/package.json').version);
     try {
-        // const [prevMonth, currentMonth] = getMonths();
-        let currentMonth = 'May'
-        console.log('Starting sequential scraping');
+        const [prevMonth, currentMonth, twoMonthsAgo] = getMonths();
+        console.log('Starting sequential scraping for month:', currentMonth);
+        console.log('Previous month:', prevMonth, 'Two months ago:', twoMonthsAgo);
 
         let previousPicks = {
             sorted: Array(8).fill([null, null, null]),
@@ -280,8 +496,13 @@ export async function GET(req) {
 
         // Only write to Firestore if all pages were processed successfully
         await writeBatchToFirestore(allDraws);
+        console.log(`Successfully processed and saved ${allDraws.length} total draws`);
 
-        return new Response(JSON.stringify('good'), {
+        return new Response(JSON.stringify({ 
+            success: true, 
+            message: `Successfully saved ${allDraws.length} draws for ${currentMonth}`,
+            drawsCount: allDraws.length 
+        }), {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
