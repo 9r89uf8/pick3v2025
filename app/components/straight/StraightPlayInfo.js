@@ -22,16 +22,12 @@ import {
     TableHead,
     TableRow
 } from '@mui/material';
-import { useStore } from '@/app/store/store';
-import { playStraight } from "@/app/services/playService";
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
-import SportsEsportsOutlinedIcon from '@mui/icons-material/SportsEsportsOutlined';
 import Looks3OutlinedIcon from '@mui/icons-material/Looks3Outlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import RuleFolderOutlinedIcon from '@mui/icons-material/RuleFolderOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import NumbersList from "@/app/components/NumbersList";
 
 // Styled component for the main container
 const StyledRulesContainer = styled(Paper)(({ theme }) => ({
@@ -114,23 +110,13 @@ const CollapsibleRuleItem = ({ icon, title, description, expanded, onToggle }) =
 );
 
 const StraightPlayInfo = () => {
-    const numbers = useStore((state) => state.numbers);
-    const clearNumbers = useStore((state) => state.clearNumbers);
-    const handleClear = () => {
-        clearNumbers();
-    };
+    // Removed numbers state and clear functionality - now handled by ActionPanel
 
     // State for expanded rule sections
     const [expandedRule, setExpandedRule] = useState(null);
     const [showPatternDetails, setShowPatternDetails] = useState(false);
 
-    const handlePlayClick = async () => {
-        try {
-            await playStraight();
-        } catch (error) {
-            alert("There was an issue starting the play sequence. Please try again.");
-        }
-    };
+    // Removed play functionality - now handled by ActionPanel
 
     const handleToggleRule = (index) => {
         setExpandedRule(expandedRule === index ? null : index);
@@ -390,51 +376,9 @@ const StraightPlayInfo = () => {
                 Only draws that satisfy all these conditions are considered "Passing Draws".
             </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                <Button
-                    variant="contained"
-                    size="large"
-                    onClick={handlePlayClick}
-                    startIcon={<SportsEsportsOutlinedIcon />}
-                    sx={{
-                        minWidth: '220px',
-                        padding: '12px 24px',
-                        fontWeight: 'bold',
-                        borderRadius: '50px',
-                        background: 'linear-gradient(45deg, #ffc300 30%, #ff8f00 90%)',
-                        color: 'black',
-                        boxShadow: '0 5px 15px rgba(0,0,0,0.2)',
-                        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                        '&:hover': {
-                            background: 'linear-gradient(45deg, #ff8f00 30%, #ffc300 90%)',
-                            transform: 'scale(1.05)',
-                            boxShadow: '0 8px 20px rgba(255,195,0,0.4)',
-                        },
-                    }}
-                >
-                    Play Now!
-                </Button>
-            </Box>
-
-            {numbers && numbers.length > 0 && (
-                <Box display="flex" flexDirection="column" alignItems="center">
-                    <Button
-                        variant="contained"
-                        size="large"
-                        onClick={handleClear}
-                        sx={{
-                            mt: 2,
-                            background: 'linear-gradient(to right, #ef233c, #d90429)',
-                            color: 'black',
-                        }}
-                    >
-                        Clear
-                    </Button>
-                    <List>
-                        <NumbersList combinations={numbers} />
-                    </List>
-                </Box>
-            )}
+            <Typography variant="body2" sx={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>
+                💡 Use the Action Panel above to generate and analyze STRAIGHT numbers
+            </Typography>
         </StyledRulesContainer>
     );
 };
