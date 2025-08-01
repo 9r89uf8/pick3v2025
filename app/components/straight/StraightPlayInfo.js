@@ -289,7 +289,7 @@ const StraightPlayInfo = () => {
                             Possible Combinations
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
-                            There are 210 total valid combinations across all 6 patterns
+                            420 combinations out of 1,000 (42%)
                         </Typography>
                     </Box>
                     <IconButton

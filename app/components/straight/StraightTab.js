@@ -158,7 +158,7 @@ const StraightTab = () => {
                   }} 
                 />
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                  210 valid combinations (29.2% coverage) across all 6 patterns for better odds.
+                    420 combinations out of 1,000 (42%).
                 </Typography>
               </Stack>
             </Grid>

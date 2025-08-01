@@ -14,7 +14,9 @@ import {
     styled,
     Collapse,
     IconButton,
-    Chip
+    Chip,
+    LinearProgress,
+    Stack
 } from '@mui/material';
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import Looks3OutlinedIcon from '@mui/icons-material/Looks3Outlined';
@@ -22,6 +24,9 @@ import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import RuleFolderOutlinedIcon from '@mui/icons-material/RuleFolderOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PercentIcon from '@mui/icons-material/Percent';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 // Styled component for the main container
 const StyledRulesContainer = styled(Paper)(({ theme }) => ({
@@ -44,6 +49,26 @@ const CombinationChip = styled(Chip)(({ theme }) => ({
         background: 'rgba(255, 195, 0, 0.2)',
         borderColor: 'rgba(255, 195, 0, 0.4)',
     },
+}));
+
+// Styled component for metric cards
+const MetricCard = styled(Box)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: `1px solid ${alpha('#ffffff', 0.15)}`,
+    borderRadius: theme.spacing(1.5),
+    padding: theme.spacing(2),
+    height: '100%',
+    position: 'relative',
+    overflow: 'hidden',
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: 'linear-gradient(90deg, transparent, #ffc300, transparent)',
+    }
 }));
 
 // Collapsible Rule Item Component
@@ -100,14 +125,11 @@ const CollapsibleRuleItem = ({ icon, title, description, expanded, onToggle }) =
 );
 
 const ComboPlayInfo = () => {
-    // Removed numbers state and clear functionality - now handled by ActionPanel
-
     // State for expanded rule sections
     const [expandedRule, setExpandedRule] = useState(null);
     const [showBBACombinations, setShowBBACombinations] = useState(false);
     const [showBAACombinations, setShowBAACombinations] = useState(false);
-
-    // Removed play functionality - now handled by ActionPanel
+    const [showPerformanceMetrics, setShowPerformanceMetrics] = useState(true);
 
     const handleToggleRule = (index) => {
         setExpandedRule(expandedRule === index ? null : index);
@@ -228,7 +250,195 @@ const ComboPlayInfo = () => {
                 ))}
             </Grid>
 
-            {/* New Possible Combinations Section */}
+            {/* New Performance Metrics Section */}
+            <Paper
+                elevation={0}
+                sx={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${alpha('#ffffff', 0.15)}`,
+                    borderRadius: 2,
+                    mt: 2,
+                }}
+            >
+                <Box
+                    onClick={() => setShowPerformanceMetrics(!showPerformanceMetrics)}
+                    sx={{
+                        padding: theme => theme.spacing(2, 2.5),
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        gap: 2,
+                        borderBottom: showPerformanceMetrics ? `1px solid ${alpha('#ffffff', 0.1)}` : 'none',
+                    }}
+                >
+                    <ListItemIcon sx={{ minWidth: 'auto', color: '#4caf50', mt: 0.5 }}>
+                        <TrendingUpIcon fontSize="large" />
+                    </ListItemIcon>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: '#f0f0f0' }}>
+                            System Performance Metrics
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+                            Based on analysis of 1,155+ actual draws
+                        </Typography>
+                    </Box>
+                    <IconButton
+                        size="small"
+                        sx={{
+                            color: 'rgba(255,255,255,0.7)',
+                            transform: showPerformanceMetrics ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                        }}
+                    >
+                        <ExpandMoreIcon />
+                    </IconButton>
+                </Box>
+
+                <Collapse in={showPerformanceMetrics} timeout="auto" unmountOnExit>
+                    <Box sx={{ padding: theme => theme.spacing(2.5) }}>
+                        <Grid container spacing={2}>
+                            {/* Pattern Coverage */}
+                            <Grid item xs={12} md={6}>
+                                <MetricCard>
+                                    <Stack spacing={2}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <CategoryOutlinedIcon sx={{ color: '#ffc300' }} />
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#f0f0f0' }}>
+                                                Pattern Selection
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 700 }}>
+                                                59%
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                of all draws captured by BBA + BAA patterns
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ mt: 1 }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={59}
+                                                sx={{
+                                                    height: 8,
+                                                    borderRadius: 4,
+                                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                                    '& .MuiLinearProgress-bar': {
+                                                        borderRadius: 4,
+                                                        bgcolor: '#4caf50',
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+                                    </Stack>
+                                </MetricCard>
+                            </Grid>
+
+                            {/* Spread Rule Effectiveness */}
+                            <Grid item xs={12} md={6}>
+                                <MetricCard>
+                                    <Stack spacing={2}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <CompareArrowsOutlinedIcon sx={{ color: '#ffc300' }} />
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#f0f0f0' }}>
+                                                Spread Rule Effectiveness
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h4" sx={{ color: '#2196f3', fontWeight: 700 }}>
+                                                70%
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                of BBA/BAA patterns pass the ≤2 difference rule
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ mt: 1 }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={70}
+                                                sx={{
+                                                    height: 8,
+                                                    borderRadius: 4,
+                                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                                    '& .MuiLinearProgress-bar': {
+                                                        borderRadius: 4,
+                                                        bgcolor: '#2196f3',
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+                                    </Stack>
+                                </MetricCard>
+                            </Grid>
+
+                            {/* System Overview */}
+                            <Grid item xs={12}>
+                                <MetricCard sx={{ background: 'rgba(76, 175, 80, 0.1)', border: '1px solid rgba(76, 175, 80, 0.3)' }}>
+                                    <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <EmojiEventsIcon /> Combo System Performance
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid item xs={6} md={3}>
+                                            <Stack spacing={0.5}>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                                    Combinations Kept
+                                                </Typography>
+                                                <Typography variant="h5" sx={{ color: '#f0f0f0', fontWeight: 700 }}>
+                                                    31.8%
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                    70 out of 220
+                                                </Typography>
+                                            </Stack>
+                                        </Grid>
+                                        <Grid item xs={6} md={3}>
+                                            <Stack spacing={0.5}>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                                    Wins Captured
+                                                </Typography>
+                                                <Typography variant="h5" sx={{ color: '#ffc300', fontWeight: 700 }}>
+                                                    41.21%
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                    of all draws
+                                                </Typography>
+                                            </Stack>
+                                        </Grid>
+                                        <Grid item xs={6} md={3}>
+                                            <Stack spacing={0.5}>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                                    Advantage
+                                                </Typography>
+                                                <Typography variant="h5" sx={{ color: '#4caf50', fontWeight: 700 }}>
+                                                    +9.4
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                    percentage points
+                                                </Typography>
+                                            </Stack>
+                                        </Grid>
+                                        <Grid item xs={6} md={3}>
+                                            <Stack spacing={0.5}>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                                    Efficiency
+                                                </Typography>
+                                                <Typography variant="h5" sx={{ color: '#2196f3', fontWeight: 700 }}>
+                                                    29.5%
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                    better than random
+                                                </Typography>
+                                            </Stack>
+                                        </Grid>
+                                    </Grid>
+                                </MetricCard>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </Collapse>
+            </Paper>
+
+            {/* Possible Combinations Section */}
             <Paper
                 elevation={0}
                 sx={{
@@ -351,7 +561,10 @@ const ComboPlayInfo = () => {
                     {/* Summary stats */}
                     <Box sx={{ mt: 2, p: 2, background: 'rgba(255, 195, 0, 0.1)', borderRadius: 1, border: '1px dashed rgba(255, 195, 0, 0.3)' }}>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                            <strong>Total Valid Combinations:</strong> 70 out of 720 possible 3-digit combinations (9.7%)
+                            <strong>Total Valid Combinations:</strong> 70 out of 220 possible regular combo combinations
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1 }}>
+                            <strong>Theoretical Maximum:</strong> 59% × 70% = 41.3% capture rate
                         </Typography>
                     </Box>
                 </Box>
