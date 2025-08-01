@@ -64,7 +64,6 @@ const HomePage = () => {
         background: AppTheme.palette.background.default,
       }}>
         {/* Header Section */}
-        <Fade in={true} timeout={800}>
           <Paper 
             elevation={0}
             sx={{ 
@@ -109,9 +108,8 @@ const HomePage = () => {
               </Box>
             </Container>
           </Paper>
-        </Fade>
 
-        <Container maxWidth="lg">
+        <Container maxWidth="xl">
           {/* Game Type Selector */}
           <Paper 
             elevation={0}

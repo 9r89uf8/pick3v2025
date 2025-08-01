@@ -78,7 +78,6 @@ const ComboTab = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       {/* Quick Start Section */}
-      <Fade in={true} timeout={600}>
         <Paper
           elevation={0}
           sx={{
@@ -167,7 +166,6 @@ const ComboTab = () => {
             </Grid>
           </Grid>
         </Paper>
-      </Fade>
 
       {/* Action Panel */}
       <ActionPanel
