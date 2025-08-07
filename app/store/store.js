@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { createPostSlice } from './postSlice';
 import {createPlaySlice} from "@/app/store/playSlice";
 import {createHistorySlice} from "@/app/store/historySlice";
+import {createFavoritesSlice} from "@/app/store/favoritesSlice";
 
 
 export const useStore = create(
@@ -11,7 +12,8 @@ export const useStore = create(
         (...a) => ({
             ...createPostSlice(...a),
             ...createPlaySlice(...a),
-            ...createHistorySlice(...a)
+            ...createHistorySlice(...a),
+            ...createFavoritesSlice(...a)
         }),
         {
             name: 'ggg', // unique name for the storage

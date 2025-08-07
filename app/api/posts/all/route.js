@@ -19,52 +19,6 @@ const getMonths = (n) => {
     return months; // Months are in reverse chronological order
 };
 
-// Function to calculate comprehensive statistics about number occurrences
-function calculateNumberStatistics(numbers) {
-    const indices = {};
-    const totalNumbers = numbers.length; // Get total count for percentage calculation
-    const stats = [];
-
-    // First pass: record all indices where each number appears
-    numbers.forEach((num, index) => {
-        if (!indices[num]) {
-            indices[num] = [];
-        }
-        indices[num].push(index);
-    });
-
-    // Calculate statistics for each number
-    for (const [num, positions] of Object.entries(indices)) {
-        const totalOccurrences = positions.length;
-
-        // Calculate percentage of occurrences
-        const occurrencesPercentage = (totalOccurrences / totalNumbers) * 100;
-        // Calculate distances between consecutive occurrences
-        const distances = [];
-        for (let i = 0; i < positions.length - 1; i++) {
-            distances.push(positions[i + 1] - positions[i]);
-        }
-
-        // Calculate average wait time (if applicable)
-        let averageWaitTime = 0;
-        if (distances.length > 0) {
-            averageWaitTime = distances.reduce((sum, val) => sum + val, 0) / distances.length;
-        }
-
-        // Calculate time since last occurrence (position 0 is the most recent)
-        const timeSinceLastOccurrence = positions[0];
-
-        stats[num] = {
-            totalOccurrences: positions.length,
-            timeSinceLastOccurrence: timeSinceLastOccurrence,
-            occurrencesPercentage: occurrencesPercentage.toFixed(2), // Format percentage
-            averageWaitTime: averageWaitTime.toFixed(2), // Round to 2 decimal places
-            recurrenceDistances: distances.length > 0 ? distances : ["Only occurs once"]
-        };
-    }
-
-    return stats;
-}
 
 export async function GET() {
     try {

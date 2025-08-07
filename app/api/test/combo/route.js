@@ -1,4 +1,4 @@
-// app/api/test/combo/route.js - COMBO draw testing and analysis
+// app/api/test/combo/route.js - COMBO draw testing and analysis with cascade subtraction
 import { adminDb } from '@/app/utils/firebaseAdmin';
 
 // Force dynamic rendering and disable caching
@@ -8,6 +8,23 @@ export const revalidate = 0;
 // Constants for clearer code
 const CATEGORY_B_MAX = 4; // Numbers 0-4 are category 'B'
 const MAX_ALLOWED_DIFF = 2; // Maximum allowed difference for passing draws
+
+/**
+ * Calculates the cascade subtraction final number
+ * Example: [4,6,9] → |4-6|=2, |6-9|=3, |2-3|=1 → returns 1
+ */
+const calculateCascadeNumber = (numbers) => {
+    if (!Array.isArray(numbers) || numbers.length !== 3) {
+        return null;
+    }
+
+    // Calculate absolute differences
+    const diff1 = Math.abs(numbers[0] - numbers[1]);
+    const diff2 = Math.abs(numbers[1] - numbers[2]);
+    const finalDiff = Math.abs(diff1 - diff2);
+
+    return finalDiff;
+};
 
 /**
  * Categorizes a number as 'A' or 'B'
@@ -160,6 +177,24 @@ export async function GET() {
                 totalSubstitutionsPassed: 0,
                 bbaFromFireball: 0,
                 baaFromFireball: 0
+            },
+            // New cascade analysis
+            cascadeAnalysis: {
+                finalNumbers: {
+                    0: 0, 1: 0, 2: 0, 3: 0, 4: 0,
+                    5: 0, 6: 0, 7: 0, 8: 0, 9: 0
+                },
+                byPattern: {
+                    BBB: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+                    BBA: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+                    BAA: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+                    AAA: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 }
+                },
+                passingDrawsOnly: {
+                    0: 0, 1: 0, 2: 0, 3: 0, 4: 0,
+                    5: 0, 6: 0, 7: 0, 8: 0, 9: 0
+                },
+                examples: [] // Store some examples for verification
             }
         };
 
@@ -182,6 +217,23 @@ export async function GET() {
                 draw.sortedThirdNumber
             ];
 
+            // Calculate cascade number for this draw
+            const cascadeNumber = calculateCascadeNumber(numbers);
+            if (cascadeNumber !== null) {
+                stats.cascadeAnalysis.finalNumbers[cascadeNumber]++;
+
+                // Store first 10 examples for verification
+                if (stats.cascadeAnalysis.examples.length < 10) {
+                    const diff1 = Math.abs(numbers[0] - numbers[1]);
+                    const diff2 = Math.abs(numbers[1] - numbers[2]);
+                    stats.cascadeAnalysis.examples.push({
+                        numbers: numbers.join('-'),
+                        calculation: `|${numbers[0]}-${numbers[1]}|=${diff1}, |${numbers[1]}-${numbers[2]}|=${diff2}, |${diff1}-${diff2}|=${cascadeNumber}`,
+                        finalNumber: cascadeNumber
+                    });
+                }
+            }
+
             // Check uniqueness
             if (new Set(numbers).size === 3) {
                 stats.uniqueNumberDraws++;
@@ -190,6 +242,11 @@ export async function GET() {
                 const pattern = getABPattern(numbers);
                 if (stats.patterns[pattern] !== undefined) {
                     stats.patterns[pattern]++;
+                }
+
+                // Track cascade by pattern
+                if (cascadeNumber !== null && stats.cascadeAnalysis.byPattern[pattern]) {
+                    stats.cascadeAnalysis.byPattern[pattern][cascadeNumber]++;
                 }
 
                 // Track differences for BBA and BAA
@@ -212,6 +269,10 @@ export async function GET() {
             const mainResult = validateDraw(numbers);
             if (mainResult.valid) {
                 stats.passedMainDraw++;
+                // Track cascade for passing draws only
+                if (cascadeNumber !== null) {
+                    stats.cascadeAnalysis.passingDrawsOnly[cascadeNumber]++;
+                }
             }
 
             // Analyze fireball if present
@@ -238,6 +299,34 @@ export async function GET() {
         // Calculate percentages
         const calculatePercentage = (count, total) =>
             total > 0 ? (count / total) * 100 : 0;
+
+        // Calculate cascade percentages
+        const cascadePercentages = {};
+        const cascadeByPatternPercentages = {};
+        const cascadePassingOnlyPercentages = {};
+
+        for (let i = 0; i <= 9; i++) {
+            cascadePercentages[i] = calculatePercentage(
+                stats.cascadeAnalysis.finalNumbers[i],
+                stats.validDraws
+            );
+            cascadePassingOnlyPercentages[i] = calculatePercentage(
+                stats.cascadeAnalysis.passingDrawsOnly[i],
+                stats.passedMainDraw
+            );
+        }
+
+        // Calculate pattern-specific cascade percentages
+        for (const pattern of ['BBB', 'BBA', 'BAA', 'AAA']) {
+            cascadeByPatternPercentages[pattern] = {};
+            const patternTotal = Object.values(stats.cascadeAnalysis.byPattern[pattern]).reduce((a, b) => a + b, 0);
+            for (let i = 0; i <= 9; i++) {
+                cascadeByPatternPercentages[pattern][i] = calculatePercentage(
+                    stats.cascadeAnalysis.byPattern[pattern][i],
+                    patternTotal
+                );
+            }
+        }
 
         const result = {
             summary: {
@@ -279,6 +368,22 @@ export async function GET() {
                     BBA: stats.fireballStats.bbaFromFireball,
                     BAA: stats.fireballStats.baaFromFireball
                 }
+            },
+            // New cascade analysis results
+            cascadeAnalysis: {
+                finalNumberDistribution: {
+                    counts: stats.cascadeAnalysis.finalNumbers,
+                    percentages: cascadePercentages
+                },
+                byPattern: {
+                    counts: stats.cascadeAnalysis.byPattern,
+                    percentages: cascadeByPatternPercentages
+                },
+                passingDrawsOnly: {
+                    counts: stats.cascadeAnalysis.passingDrawsOnly,
+                    percentages: cascadePassingOnlyPercentages
+                },
+                examples: stats.cascadeAnalysis.examples
             }
         };
 
