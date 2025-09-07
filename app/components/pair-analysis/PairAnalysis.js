@@ -22,6 +22,9 @@ const PairAnalysis = () => {
     const [addingToFavorites, setAddingToFavorites] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     
+    // Pair type selection state
+    const [pairType, setPairType] = useState('first-second');
+    
     // Monthly tracking state
     const [selectedMonth, setSelectedMonth] = useState('');
     const [selectedYear, setSelectedYear] = useState('2025');
@@ -36,7 +39,7 @@ const PairAnalysis = () => {
         setError(null);
         
         try {
-            const response = await fetch('/api/pair-analysis', {
+            const response = await fetch(`/api/pair-analysis?pairType=${pairType}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,6 +73,13 @@ const PairAnalysis = () => {
         // Analyze current month automatically
         analyzeMonthlyPairs(currentMonth, selectedYear);
     }, []);
+    
+    // Re-analyze when pair type changes
+    useEffect(() => {
+        if (pairType) {
+            analyzePairs();
+        }
+    }, [pairType]);
     
     // Analyze monthly pairs for tracked pairs (0,1), (1,2), (2,3)
     const analyzeMonthlyPairs = async (month = selectedMonth, year = selectedYear) => {
@@ -264,6 +274,8 @@ const PairAnalysis = () => {
                 data={data}
                 error={error}
                 successMessage={successMessage}
+                pairType={pairType}
+                onPairTypeChange={setPairType}
                 onAnalyzePairs={analyzePairs}
                 onClearSuccessMessage={() => setSuccessMessage('')}
             />

@@ -11,6 +11,17 @@ import {
 
 const PairInsights = ({ data }) => {
     if (!data) return null;
+    
+    const getPossibilityLabel = () => {
+        switch(data.pairType) {
+            case 'first-third':
+                return 'possible middles';
+            case 'second-third':
+                return 'possible firsts';
+            default:
+                return 'possible thirds';
+        }
+    };
 
     return (
         <Paper sx={{ p: 3, mb: 3, background: 'rgba(255, 255, 255, 0.02)' }}>
@@ -30,7 +41,7 @@ const PairInsights = ({ data }) => {
                                 <Stack direction="row" spacing={2} alignItems="center">
                                     <Chip label={pair.pair} color="success" />
                                     <Typography variant="body2">
-                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} possible thirds
+                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
                                     </Typography>
                                 </Stack>
                             </Box>
@@ -46,7 +57,7 @@ const PairInsights = ({ data }) => {
                                 <Stack direction="row" spacing={2} alignItems="center">
                                     <Chip label={pair.pair} color="error" />
                                     <Typography variant="body2">
-                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} possible thirds
+                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
                                     </Typography>
                                 </Stack>
                             </Box>

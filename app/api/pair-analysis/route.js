@@ -4,80 +4,22 @@ import { adminDb } from '@/app/utils/firebaseAdmin';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Constants for categorization
-const CATEGORY_B_MAX = 4; // Numbers 0-4 are category 'B'
-const MAX_ALLOWED_DIFF = 2; // Maximum allowed difference for passing draws
 
 /**
- * Categorizes a number as 'A' or 'B'
- * B: 0-4, A: 5-9
+ * Calculate how many valid numbers can complete a pair based on pair type
  */
-const getCategory = (num) => num <= CATEGORY_B_MAX ? 'B' : 'A';
-
-/**
- * Gets the A/B pattern for a set of three numbers
- */
-const getABPattern = (numbers) => {
-    const categories = numbers.map(getCategory);
-    const bCount = categories.filter(cat => cat === 'B').length;
-    const aCount = categories.filter(cat => cat === 'A').length;
-    
-    const patterns = {
-        '3-0': 'BBB',
-        '2-1': 'BBA',
-        '1-2': 'BAA',
-        '0-3': 'AAA'
-    };
-    
-    return patterns[`${bCount}-${aCount}`] || 'UNKNOWN';
-};
-
-/**
- * Validates if a combination passes COMBO rules
- */
-const validateCombination = (numbers) => {
-    // Must be 3 unique numbers
-    if (new Set(numbers).size !== 3) return false;
-    
-    // Sort for analysis
-    const sorted = [...numbers].sort((a, b) => a - b);
-    const pattern = getABPattern(sorted);
-    
-    // Only BBA and BAA patterns are valid for COMBO
-    if (pattern === 'BBA') {
-        // For BBA: difference between 2nd and 1st B number must be ≤ 2
-        const bNumbers = sorted.filter(n => n <= CATEGORY_B_MAX);
-        if (bNumbers.length >= 2) {
-            const diff = bNumbers[1] - bNumbers[0];
-            return diff <= MAX_ALLOWED_DIFF;
-        }
-    } else if (pattern === 'BAA') {
-        // For BAA: difference between 2nd and 1st A number must be ≤ 2
-        const aNumbers = sorted.filter(n => n > CATEGORY_B_MAX);
-        if (aNumbers.length >= 2) {
-            const diff = aNumbers[1] - aNumbers[0];
-            return diff <= MAX_ALLOWED_DIFF;
-        }
+const calculatePossibilities = (first, second, pairType) => {
+    switch (pairType) {
+        case 'first-third':
+            // For first-third: count numbers between first and third (inclusive)
+            return second - first + 1;
+        case 'second-third':
+            // For second-third: count numbers from 0 to second (inclusive)
+            return first + 1;
+        default: // 'first-second'
+            // For first-second: count numbers from second to 9
+            return 10 - second;
     }
-    
-    return false;
-};
-
-/**
- * Calculate how many valid third numbers can complete a pair
- * Since draws are sorted, third number must be >= second number
- * Including repeat numbers
- */
-const calculatePossibleThirds = (first, second) => {
-    let possibleCount = 0;
-    
-    // Third number must be >= second number (sorted constraint)
-    // Including repeats
-    for (let i = second; i <= 9; i++) {
-        possibleCount++;
-    }
-    
-    return possibleCount;
 };
 
 /**
@@ -99,10 +41,9 @@ const categorizePair = (frequency, totalDraws) => {
 /**
  * Analyze previous draw patterns to find what preceded each pair
  */
-const analyzePreviousPatterns = (draws) => {
+const analyzePreviousPatterns = (draws, pairType) => {
     const transitionMatrix = new Map(); // tracks pair -> next pair transitions
     const numberActivity = new Map(); // tracks how often each number appears in recent history
-    const numberRecentDraws = new Map(); // tracks recent draws per number
     
     // Initialize tracking for each number
     for (let i = 0; i <= 9; i++) {
@@ -111,47 +52,52 @@ const analyzePreviousPatterns = (draws) => {
             secondPositionCount: 0,
             totalCount: 0
         });
-        numberRecentDraws.set(i, new Set()); // Use Set to track unique draws
     }
     
     // Process each draw with its previous data
     draws.forEach((draw, drawIndex) => {
-        if (draw.sortedFirstNumber === undefined || draw.sortedSecondNumber === undefined) return;
+        const currentPairNumbers = getPairNumbers(draw, pairType);
+        if (!currentPairNumbers.isValid) return;
         
-        const currentPair = `${Math.min(draw.sortedFirstNumber, draw.sortedSecondNumber)}-${Math.max(draw.sortedFirstNumber, draw.sortedSecondNumber)}`;
+        const currentPair = `${Math.min(currentPairNumbers.num1, currentPairNumbers.num2)}-${Math.max(currentPairNumbers.num1, currentPairNumbers.num2)}`;
         
         // Analyze previous draws (stored in the draw object)
         const previousPairs = [];
         for (let i = 1; i <= 8; i++) {
-            const prevFirst = draw[`sortedPreviousFirst${i}`];
-            const prevSecond = draw[`sortedPreviousSecond${i}`];
+            // Get previous numbers based on pair type
+            let prevNum1, prevNum2;
+            switch (pairType) {
+                case 'first-third':
+                    prevNum1 = draw[`sortedPreviousFirst${i}`];
+                    prevNum2 = draw[`sortedPreviousThird${i}`];
+                    break;
+                case 'second-third':
+                    prevNum1 = draw[`sortedPreviousSecond${i}`];
+                    prevNum2 = draw[`sortedPreviousThird${i}`];
+                    break;
+                default: // 'first-second'
+                    prevNum1 = draw[`sortedPreviousFirst${i}`];
+                    prevNum2 = draw[`sortedPreviousSecond${i}`];
+            }
             
-            if (prevFirst !== undefined && prevSecond !== undefined && 
-                prevFirst >= 0 && prevFirst <= 9 && 
-                prevSecond >= 0 && prevSecond <= 9) {
+            if (prevNum1 !== undefined && prevNum2 !== undefined && 
+                prevNum1 >= 0 && prevNum1 <= 9 && 
+                prevNum2 >= 0 && prevNum2 <= 9) {
                 // Track number activity
-                const firstActivity = numberActivity.get(prevFirst);
+                const firstActivity = numberActivity.get(prevNum1);
                 if (firstActivity) {
                     firstActivity.firstPositionCount++;
                     firstActivity.totalCount++;
                 }
                 
-                const secondActivity = numberActivity.get(prevSecond);
+                const secondActivity = numberActivity.get(prevNum2);
                 if (secondActivity) {
                     secondActivity.secondPositionCount++;
                     secondActivity.totalCount++;
                 }
                 
-                // Track recent draws (only last 4 draws)
-                if (i <= 4) {
-                    const firstRecentSet = numberRecentDraws.get(prevFirst);
-                    const secondRecentSet = numberRecentDraws.get(prevSecond);
-                    if (firstRecentSet) firstRecentSet.add(drawIndex);
-                    if (secondRecentSet) secondRecentSet.add(drawIndex);
-                }
-                
                 // Create pair for transition tracking
-                const prevPair = `${Math.min(prevFirst, prevSecond)}-${Math.max(prevFirst, prevSecond)}`;
+                const prevPair = `${Math.min(prevNum1, prevNum2)}-${Math.max(prevNum1, prevNum2)}`;
                 previousPairs.push({ pair: prevPair, drawsBack: i });
             }
         }
@@ -169,17 +115,54 @@ const analyzePreviousPatterns = (draws) => {
     
     return {
         transitionMatrix,
-        numberActivity,
-        numberRecentDraws
+        numberActivity
     };
 };
 
-export async function GET() {
+/**
+ * Extract the correct pair of numbers based on pair type
+ */
+const getPairNumbers = (draw, pairType) => {
+    switch (pairType) {
+        case 'first-third':
+            return {
+                num1: draw.sortedFirstNumber,
+                num2: draw.sortedThirdNumber,
+                isValid: typeof draw.sortedFirstNumber === 'number' &&
+                        typeof draw.sortedThirdNumber === 'number' &&
+                        draw.sortedFirstNumber >= 0 && draw.sortedFirstNumber <= 9 &&
+                        draw.sortedThirdNumber >= 0 && draw.sortedThirdNumber <= 9
+            };
+        case 'second-third':
+            return {
+                num1: draw.sortedSecondNumber,
+                num2: draw.sortedThirdNumber,
+                isValid: typeof draw.sortedSecondNumber === 'number' &&
+                        typeof draw.sortedThirdNumber === 'number' &&
+                        draw.sortedSecondNumber >= 0 && draw.sortedSecondNumber <= 9 &&
+                        draw.sortedThirdNumber >= 0 && draw.sortedThirdNumber <= 9
+            };
+        default: // 'first-second'
+            return {
+                num1: draw.sortedFirstNumber,
+                num2: draw.sortedSecondNumber,
+                isValid: typeof draw.sortedFirstNumber === 'number' &&
+                        typeof draw.sortedSecondNumber === 'number' &&
+                        draw.sortedFirstNumber >= 0 && draw.sortedFirstNumber <= 9 &&
+                        draw.sortedSecondNumber >= 0 && draw.sortedSecondNumber <= 9
+            };
+    }
+};
+
+export async function GET(request) {
     try {
+        // Get pair type from query parameters (default to first-second)
+        const { searchParams } = new URL(request.url);
+        const pairType = searchParams.get('pairType') || 'first-second';
         const firestore = adminDb.firestore();
         
         // Fetch all draws
-        console.log('Fetching all draws for pair analysis...');
+        console.log(`Fetching all draws for ${pairType} pair analysis...`);
         const snapshot = await firestore
             .collection('draws')
             .orderBy('index', 'desc')
@@ -197,27 +180,24 @@ export async function GET() {
         snapshot.forEach(doc => {
             const draw = doc.data();
             
-            // Only process draws with valid sorted numbers
-            if (typeof draw.sortedFirstNumber === 'number' &&
-                typeof draw.sortedSecondNumber === 'number' &&
-                typeof draw.sortedThirdNumber === 'number' &&
-                draw.sortedFirstNumber >= 0 && draw.sortedFirstNumber <= 9 &&
-                draw.sortedSecondNumber >= 0 && draw.sortedSecondNumber <= 9 &&
-                draw.sortedThirdNumber >= 0 && draw.sortedThirdNumber <= 9) {
-                
+            // Get the pair numbers for the selected pair type
+            const pairNumbers = getPairNumbers(draw, pairType);
+            
+            // Only process draws with valid numbers for the selected pair type
+            if (pairNumbers.isValid) {
                 // Store valid draw for pattern analysis
                 validDraws.push(draw);
                 
                 // Create pair key (always in ascending order for consistency)
-                const first = Math.min(draw.sortedFirstNumber, draw.sortedSecondNumber);
-                const second = Math.max(draw.sortedFirstNumber, draw.sortedSecondNumber);
+                const first = Math.min(pairNumbers.num1, pairNumbers.num2);
+                const second = Math.max(pairNumbers.num1, pairNumbers.num2);
                 const pairKey = `${first}-${second}`;
                 
                 // Increment pair frequency
                 const currentCount = pairFrequencies.get(pairKey) || 0;
                 pairFrequencies.set(pairKey, currentCount + 1);
                 
-                // Track full combination frequency
+                // Track full combination frequency (always use sorted order)
                 const comboKey = `${draw.sortedFirstNumber}-${draw.sortedSecondNumber}-${draw.sortedThirdNumber}`;
                 const currentComboCount = combinationFrequencies.get(comboKey) || 0;
                 combinationFrequencies.set(comboKey, currentComboCount + 1);
@@ -227,7 +207,7 @@ export async function GET() {
         });
         
         // Analyze previous patterns
-        const patternAnalysis = analyzePreviousPatterns(validDraws);
+        const patternAnalysis = analyzePreviousPatterns(validDraws, pairType);
         
         console.log(`Found ${pairFrequencies.size} unique pairs in ${totalValidDraws} valid draws`);
         
@@ -240,22 +220,67 @@ export async function GET() {
                 const pairKey = `${i}-${j}`;
                 const frequency = pairFrequencies.get(pairKey) || 0;
                 const percentage = totalValidDraws > 0 ? (frequency / totalValidDraws) * 100 : 0;
-                const possibleThirds = calculatePossibleThirds(i, j);
+                const possibleThirds = calculatePossibilities(i, j, pairType);
                 const category = categorizePair(frequency, totalValidDraws);
                 
-                // Get all combinations for this pair
+                // Get all combinations that contain this pair in the correct positions
                 const combinations = [];
-                for (let third = j; third <= 9; third++) {
-                    const comboKey = `${i}-${j}-${third}`;
-                    const comboFreq = combinationFrequencies.get(comboKey) || 0;
-                    const comboPercentage = totalValidDraws > 0 ? (comboFreq / totalValidDraws) * 100 : 0;
+                
+                // Check all existing combinations to see if they contain our pair
+                for (const [comboKey, comboFreq] of combinationFrequencies) {
+                    const parts = comboKey.split('-').map(Number);
+                    let matchesPair = false;
                     
-                    combinations.push({
-                        combo: comboKey,
-                        numbers: [i, j, third],
-                        frequency: comboFreq,
-                        percentage: comboPercentage
-                    });
+                    switch (pairType) {
+                        case 'first-second':
+                            // Check if first=i and second=j
+                            matchesPair = (parts[0] === i && parts[1] === j);
+                            break;
+                        case 'first-third':
+                            // Check if first=i and third=j
+                            matchesPair = (parts[0] === i && parts[2] === j);
+                            break;
+                        case 'second-third':
+                            // Check if second=i and third=j
+                            matchesPair = (parts[1] === i && parts[2] === j);
+                            break;
+                    }
+                    
+                    if (matchesPair) {
+                        const comboPercentage = totalValidDraws > 0 ? (comboFreq / totalValidDraws) * 100 : 0;
+                        combinations.push({
+                            combo: comboKey,
+                            numbers: parts,
+                            frequency: comboFreq,
+                            percentage: comboPercentage
+                        });
+                    }
+                }
+                
+                // Also add combinations with 0 frequency for completeness
+                // Generate all possible combinations for this pair
+                for (let k = 0; k <= 9; k++) {
+                    let comboKey;
+                    switch (pairType) {
+                        case 'first-second':
+                            if (k >= j) comboKey = `${i}-${j}-${k}`;
+                            break;
+                        case 'first-third':
+                            if (k >= i && k <= j) comboKey = `${i}-${k}-${j}`;
+                            break;
+                        case 'second-third':
+                            if (k <= i) comboKey = `${k}-${i}-${j}`;
+                            break;
+                    }
+                    
+                    if (comboKey && !combinations.find(c => c.combo === comboKey)) {
+                        combinations.push({
+                            combo: comboKey,
+                            numbers: comboKey.split('-').map(Number),
+                            frequency: 0,
+                            percentage: 0
+                        });
+                    }
                 }
                 
                 // Calculate what pairs preceded this pair
@@ -321,87 +346,32 @@ export async function GET() {
             low: pairs.filter(p => p.category === 'low').length
         };
         
-        // Calculate correlation insights
-        const correlationData = pairs.map(p => ({
-            possibleThirds: p.possibleThirds,
-            frequency: p.frequency
-        }));
-        
-        // Group by possible thirds to show pattern
-        const patternByThirds = {};
-        for (let i = 1; i <= 9; i++) {
-            const pairsWithThisCount = pairs.filter(p => p.possibleThirds === i);
-            if (pairsWithThisCount.length > 0) {
-                patternByThirds[i] = {
-                    avgFrequency: pairsWithThisCount.reduce((sum, p) => sum + p.frequency, 0) / pairsWithThisCount.length,
-                    pairs: pairsWithThisCount.map(p => p.pair)
-                };
-            }
+        // Generate appropriate correlation note based on pair type
+        let correlationNote;
+        switch (pairType) {
+            case 'first-third':
+                correlationNote = "In first & third position analysis, pairs that are farthest apart (like 1-8) tend to appear more frequently because they have more possible middle numbers that can fit between them.";
+                break;
+            case 'second-third':
+                correlationNote = "In second & third position analysis, pairs with higher starting second number values tend to appear more frequently because they have more possible first numbers that can precede them.";
+                break;
+            default: // 'first-second'
+                correlationNote = "Higher frequency pairs tend to have more possible third numbers (pair 0-1 has 9 possible third numbers), while lower frequency pairs have fewer options (pair 5-8 has 2 possible third options 5-8-8 and 5-8-9).";
         }
-        
-        // Calculate hot/cold numbers based on recent activity
-        const hotColdAnalysis = [];
-        const totalDrawsAnalyzed = validDraws.length;
-        
-        for (let i = 0; i <= 9; i++) {
-            const activity = patternAnalysis.numberActivity.get(i);
-            const recentDrawsSet = patternAnalysis.numberRecentDraws.get(i);
-            const recentCount = recentDrawsSet ? recentDrawsSet.size : 0;
-            
-            // Calculate percentage of recent draws containing this number
-            const recentPercentage = totalDrawsAnalyzed > 0 ? (recentCount / totalDrawsAnalyzed) * 100 : 0;
-            
-            // Determine temperature based on percentage of recent draws
-            let temperature;
-            if (recentPercentage >= 50) temperature = 'hot';      // Appears in 50%+ of recent draws
-            else if (recentPercentage >= 25) temperature = 'warm'; // Appears in 25-49% of recent draws
-            else if (recentPercentage >= 10) temperature = 'cool'; // Appears in 10-24% of recent draws
-            else temperature = 'cold';                              // Appears in <10% of recent draws
-            
-            hotColdAnalysis.push({
-                number: i,
-                totalAppearances: activity.totalCount,
-                recentAppearances: recentCount,
-                recentPercentage: recentPercentage.toFixed(1),
-                firstPositionCount: activity.firstPositionCount,
-                secondPositionCount: activity.secondPositionCount,
-                temperature: temperature
-            });
-        }
-        hotColdAnalysis.sort((a, b) => b.recentAppearances - a.recentAppearances);
         
         const result = {
             success: true,
+            pairType: pairType,
             summary: {
                 totalDrawsAnalyzed: totalValidDraws,
-                totalUniquePairs: 45,
-                pairsFound: pairFrequencies.size,
-                analysisDate: new Date().toISOString()
+                pairsFound: pairFrequencies.size
             },
             pairs: pairs,
             insights: {
                 mostFrequent: mostFrequent,
                 leastFrequent: leastFrequent,
                 categoryStats: categoryStats,
-                patternByThirds: patternByThirds,
-                correlationNote: "Higher frequency pairs tend to have more possible third numbers (7-9 options), while lower frequency pairs have fewer options (1-3).",
-                hotColdNumbers: {
-                    hot: hotColdAnalysis.filter(n => n.temperature === 'hot'),
-                    warm: hotColdAnalysis.filter(n => n.temperature === 'warm'),
-                    cool: hotColdAnalysis.filter(n => n.temperature === 'cool'),
-                    cold: hotColdAnalysis.filter(n => n.temperature === 'cold')
-                },
-                transitionInsights: {
-                    totalTransitions: patternAnalysis.transitionMatrix.size,
-                    mostCommonTransitions: Array.from(patternAnalysis.transitionMatrix.entries())
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 10)
-                        .map(([transition, count]) => ({
-                            from: transition.split('→')[0],
-                            to: transition.split('→')[1],
-                            count: count
-                        }))
-                }
+                correlationNote: correlationNote,
             }
         };
         
