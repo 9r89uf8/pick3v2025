@@ -38,7 +38,8 @@ import {
     getStatusBadge,
     parsePattern,
     calculateSuggestions,
-    validateCombination
+    validateCombination,
+    calculatePairAnalysis
 } from '@/app/services/combinationBuilderService';
 
 const CombinationBuilder = () => {
@@ -55,9 +56,9 @@ const CombinationBuilder = () => {
         insights: true
     });
 
-    // Check history whenever numbers change
+    // Check history whenever numbers change (skip for pairs - use mathematical analysis instead)
     useEffect(() => {
-        if (selectedNumbers.length > 0) {
+        if (selectedNumbers.length > 0 && selectedNumbers.length !== 2) {
             checkHistory();
         } else {
             setHistoryData(null);
@@ -236,6 +237,73 @@ const CombinationBuilder = () => {
     );
 
     const renderFeedback = () => {
+        // Show pair analysis for exactly 2 numbers
+        if (selectedNumbers.length === 2) {
+            const pairAnalysis = calculatePairAnalysis(selectedNumbers);
+            if (!pairAnalysis) return null;
+            
+            return (
+                <Box sx={{ mt: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        Pair Position Analysis
+                    </Typography>
+                    
+                    <Card elevation={2}>
+                        <CardContent>
+                            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                Pair {pairAnalysis.pair} - Total Combinations: {pairAnalysis.totalCombinations}
+                            </Typography>
+                            
+                            {/* Analysis Table */}
+                            <Box sx={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '2fr 1fr 1fr', 
+                                gap: 2, 
+                                alignItems: 'center',
+                                mb: 2
+                            }}>
+                                {/* Headers */}
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                    Position
+                                </Typography>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                                    Combinations
+                                </Typography>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                                    Percentage
+                                </Typography>
+                                
+                                {/* Data Rows */}
+                                {pairAnalysis.configurations.map((config, index) => (
+                                    <React.Fragment key={index}>
+                                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                            {config.position}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                            {config.combinations}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ textAlign: 'center' }}>
+                                            {config.percentage.toFixed(1)}%
+                                        </Typography>
+                                    </React.Fragment>
+                                ))}
+                            </Box>
+                            
+                            {/* Dominant Configuration */}
+                            <Divider sx={{ my: 2 }} />
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                <Typography variant="body2">
+                                    <strong>Dominant Configuration:</strong> {pairAnalysis.dominantConfiguration.position.replace(/\(.*\)/g, '').trim()} 
+                                    ({pairAnalysis.dominantConfiguration.percentage.toFixed(1)}%)
+                                </Typography>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+                </Box>
+            );
+        }
+        
+        // Original feedback for other cases (1 number or 3 numbers)
         if (!historyData) return null;
         
         const { statistics, insights, recentOccurrences, monthlyBreakdown } = historyData;
@@ -264,29 +332,6 @@ const CombinationBuilder = () => {
                                     {statistics.firstNumber.lastSeen && (
                                         <Typography variant="caption" display="block" sx={{ mt: 1 }}>
                                             Last: {statistics.firstNumber.lastSeen}
-                                        </Typography>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    )}
-                    
-                    {selectedNumbers.length >= 2 && statistics.firstTwo && (
-                        <Grid item xs={12} md={4}>
-                            <Card elevation={2}>
-                                <CardContent>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        First Two ({selectedNumbers.slice(0, 2).join('-')})
-                                    </Typography>
-                                    <Typography variant="h4" sx={{ my: 1 }}>
-                                        {statistics.firstTwo.count}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        {statistics.firstTwo.frequency}
-                                    </Typography>
-                                    {statistics.firstTwo.lastSeen && (
-                                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                                            Last: {statistics.firstTwo.lastSeen}
                                         </Typography>
                                     )}
                                 </CardContent>
@@ -379,28 +424,6 @@ const CombinationBuilder = () => {
                                     ))}
                                 </List>
                             </Collapse>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Third Number Suggestions */}
-                {selectedNumbers.length === 2 && statistics.firstTwo?.possibleThirds && statistics.firstTwo.possibleThirds.length > 0 && (
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" sx={{ mb: 2 }}>
-                                Suggested Third Numbers
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                {statistics.firstTwo.possibleThirds.slice(0, 5).map((third) => (
-                                    <Chip
-                                        key={third.number}
-                                        label={`${third.number} (${third.count}x)`}
-                                        onClick={() => handleNumberClick(third.number)}
-                                        color={third.count > 2 ? "primary" : "default"}
-                                        variant={third.count > 2 ? "filled" : "outlined"}
-                                    />
-                                ))}
-                            </Box>
                         </CardContent>
                     </Card>
                 )}

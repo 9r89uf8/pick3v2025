@@ -29,9 +29,10 @@ const Navbar = () => {
                     <img
                         src="https://chicagocarhelp.s3.us-east-2.amazonaws.com/Untitled+design+(2).png"
                         alt="logo"
-                        style={{ width: 60, height: 'auto', marginRight: 4 }}
+                        style={{ width: 60, height: 'auto', marginRight: 16 }}
                     />
-                    <Button color="inherit" onClick={() => router.push('/')}></Button>
+                    <Button color="inherit" onClick={() => router.push('/')}>Home</Button>
+                    <Button color="inherit" onClick={() => router.push('/pair-tracking')}>Pair Tracking</Button>
                 </Box>
 
                 {/*<div>*/}

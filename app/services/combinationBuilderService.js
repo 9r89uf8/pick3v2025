@@ -194,6 +194,58 @@ export const validateCombination = (numbers) => {
     return { valid: true, message: `Pattern ${pattern} - valid for STRAIGHT play` };
 };
 
+/**
+ * Calculate pair analysis for position configurations
+ * @param {number[]} numbers - Array of exactly 2 numbers
+ * @returns {Object} Pair analysis results
+ */
+export const calculatePairAnalysis = (numbers) => {
+    if (numbers.length !== 2) {
+        return null;
+    }
+
+    // Sort the numbers to ensure A < B
+    const [A, B] = numbers.sort((a, b) => a - b);
+    
+    // Calculate combinations for each position using the formulas
+    const firstSecond = 9 - B; // A-B-X configuration
+    const firstThird = B - A - 1; // A-X-B configuration  
+    const secondThird = A; // X-A-B configuration
+    
+    const configurations = [
+        {
+            position: `1st & 2nd (${A}-${B}-x)`,
+            combinations: firstSecond,
+            percentage: (firstSecond / 8) * 100
+        },
+        {
+            position: `1st & 3rd (${A}-x-${B})`,
+            combinations: firstThird,
+            percentage: (firstThird / 8) * 100
+        },
+        {
+            position: `2nd & 3rd (x-${A}-${B})`,
+            combinations: secondThird,
+            percentage: (secondThird / 8) * 100
+        }
+    ];
+    
+    // Find dominant configuration
+    const dominantConfig = configurations.reduce((max, config) => 
+        config.combinations > max.combinations ? config : max
+    );
+    
+    return {
+        pair: `${A}-${B}`,
+        configurations,
+        dominantConfiguration: {
+            position: dominantConfig.position,
+            percentage: dominantConfig.percentage
+        },
+        totalCombinations: firstSecond + firstThird + secondThird // Should always be 8
+    };
+};
+
 function getPattern(numbers) {
     if (numbers.length === 0) return '';
     return numbers.map(n => n <= 4 ? 'B' : 'A').join('');
