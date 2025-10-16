@@ -1,140 +1,79 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
-  useTheme,
-  useMediaQuery,
-  Chip
-} from '@mui/material';
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center p-8">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+  </div>
+);
 
 const DrawsList = ({ draws, loading }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress sx={{ color: theme.palette.primary.main }} />
-      </Box>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!draws || draws.length === 0) {
     return (
-      <Box textAlign="center" p={4}>
-        <Typography variant="h6" color="text.secondary">
+      <div className="text-center p-8">
+        <h6 className="text-lg text-white/70">
           No draws available
-        </Typography>
-      </Box>
+        </h6>
+      </div>
     );
   }
 
   return (
-    <TableContainer 
-      component={Paper} 
-      sx={{
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 195, 0, 0.2)',
-        borderRadius: 2,
-        maxHeight: isMobile ? 400 : 600,
-        overflow: 'auto'
-      }}
-    >
-      <Table stickyHeader>
-        <TableHead>
-          <TableRow>
-            <TableCell 
-              sx={{ 
-                background: 'rgba(255, 195, 0, 0.1)',
-                color: theme.palette.text.primary,
-                fontWeight: 'bold'
-              }}
-            >
+    <div className="glass-card rounded-xl overflow-hidden max-h-[400px] md:max-h-[600px] overflow-y-auto">
+      <table className="w-full">
+        <thead className="sticky top-0 bg-accent-gold/10 backdrop-blur-sm">
+          <tr>
+            <th className="px-4 py-3 text-left font-bold text-white">
               Date
-            </TableCell>
-            <TableCell 
-              sx={{ 
-                background: 'rgba(255, 195, 0, 0.1)',
-                color: theme.palette.text.primary,
-                fontWeight: 'bold'
-              }}
-            >
+            </th>
+            <th className="px-4 py-3 text-left font-bold text-white">
               Sorted Numbers
-            </TableCell>
-            <TableCell 
-              sx={{ 
-                background: 'rgba(255, 195, 0, 0.1)',
-                color: theme.palette.text.primary,
-                fontWeight: 'bold'
-              }}
-            >
+            </th>
+            <th className="px-4 py-3 text-left font-bold text-white">
               Fireball
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {draws.map((draw, index) => (
-            <TableRow 
+            <tr
               key={draw.id || index}
-              sx={{
-                '&:nth-of-type(odd)': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                },
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 195, 0, 0.05)',
-                },
-              }}
+              className="border-t border-white/5 hover:bg-accent-gold/5 transition-colors odd:bg-white/[0.02]"
             >
-              <TableCell sx={{ color: theme.palette.text.primary }}>
+              <td className="px-4 py-3 text-white">
                 {draw.drawDate}
-              </TableCell>
-              <TableCell>
-                <Box display="flex" gap={0.5} flexWrap="wrap">
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex gap-1 flex-wrap">
                   {[draw.sortedFirstNumber, draw.sortedSecondNumber, draw.sortedThirdNumber]
                     .filter(num => num !== undefined)
                     .map((num, numIndex) => (
-                    <Chip
-                      key={numIndex}
-                      label={num}
-                      size="small"
-                      sx={{
-                        backgroundColor: 'rgba(255, 195, 0, 0.2)',
-                        color: theme.palette.text.primary,
-                        fontWeight: 'bold',
-                        minWidth: '32px'
-                      }}
-                    />
-                  ))}
-                </Box>
-              </TableCell>
-              <TableCell sx={{ color: theme.palette.text.primary }}>
+                      <span
+                        key={numIndex}
+                        className="inline-flex items-center justify-center px-2 py-1 rounded bg-accent-gold/20 text-white font-bold text-sm min-w-[32px]"
+                      >
+                        {num}
+                      </span>
+                    ))}
+                </div>
+              </td>
+              <td className="px-4 py-3 text-white">
                 {draw.fireball !== undefined ? (
-                  <Chip
-                    label={draw.fireball}
-                    size="small"
-                    sx={{
-                      backgroundColor: '#ff6b35',
-                      color: 'white',
-                      fontWeight: 'bold'
-                    }}
-                  />
+                  <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-[#ff6b35] text-white font-bold text-sm">
+                    {draw.fireball}
+                  </span>
                 ) : (
                   '-'
                 )}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 };
 

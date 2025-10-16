@@ -1,22 +1,22 @@
 'use client';
 import React from 'react';
-import {
-    Paper,
-    Stack,
-    Button,
-    Typography,
-    Alert,
-    CircularProgress,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    useMediaQuery,
-    useTheme
-} from '@mui/material';
-import {
-    Analytics as AnalyticsIcon
-} from '@mui/icons-material';
+
+// Icons as SVG components
+const AnalyticsIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+);
+
+const CloseIcon = ({ className = "w-4 h-4" }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
+const LoadingSpinner = ({ size = "w-5 h-5" }) => (
+    <div className={`animate-spin rounded-full border-b-2 border-current ${size}`}></div>
+);
 
 const ControlBar = ({
     loading,
@@ -28,10 +28,6 @@ const ControlBar = ({
     onAnalyzePairs,
     onClearSuccessMessage
 }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    
     const pairTypeOptions = [
         { value: 'first-second', label: '1st & 2nd Numbers' },
         { value: 'first-third', label: '1st & 3rd Numbers' },
@@ -39,69 +35,70 @@ const ControlBar = ({
     ];
 
     return (
-        <Paper sx={{ 
-            p: { xs: 2, md: 3 }, 
-            mb: { xs: 2, md: 3 }, 
-            background: 'rgba(255, 255, 255, 0.02)' 
-        }}>
-            <Stack 
-                direction={isMobile ? "column" : "row"} 
-                spacing={2} 
-                alignItems={isMobile ? "stretch" : "center"}
-            >
-                <FormControl 
-                    size={isMobile ? "medium" : "small"}
-                    sx={{ minWidth: { xs: '100%', sm: 200, md: 220 } }}
-                >
-                    <InputLabel>Pair Type</InputLabel>
-                    <Select
+        <div className="glass-card bg-white/5 p-4 md:p-6 mb-4 md:mb-6 rounded-xl">
+            <div className="flex flex-col md:flex-row gap-4 md:items-center">
+                <div className="flex-1 md:min-w-[220px]">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 md:hidden">
+                        Pair Type
+                    </label>
+                    <select
                         value={pairType}
                         onChange={(e) => onPairTypeChange(e.target.value)}
-                        label="Pair Type"
                         disabled={loading}
+                        className="w-full px-4 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {pairTypeOptions.map(option => (
-                            <MenuItem key={option.value} value={option.value}>
+                            <option key={option.value} value={option.value} className="bg-gray-900">
                                 {option.label}
-                            </MenuItem>
+                            </option>
                         ))}
-                    </Select>
-                </FormControl>
-                
-                <Button
-                    variant="contained"
-                    color="primary"
-                    size={isMobile ? "medium" : "large"}
-                    startIcon={loading ? <CircularProgress size={20} /> : !isSmallMobile && <AnalyticsIcon />}
+                    </select>
+                </div>
+
+                <button
                     onClick={onAnalyzePairs}
                     disabled={loading}
-                    fullWidth={isMobile}
-                    sx={{ minHeight: { xs: 40, sm: 48 } }}
+                    className="w-full md:w-auto px-6 py-2 md:py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[40px] md:min-h-[48px]"
                 >
-                    {loading ? 'Analyzing...' : isSmallMobile ? '📊 Analyze Pairs' : 'Analyze Pairs'}
-                </Button>
-                
-                {data && (
-                    <Typography 
-                        variant="body2" 
-                        color="textSecondary"
-                        sx={{ 
-                            textAlign: isMobile ? 'center' : 'left',
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                        }}
-                    >
-                        Analyzed {data.summary.totalDrawsAnalyzed} draws • Found {data.summary.pairsFound} unique pairs
-                    </Typography>
-                )}
-            </Stack>
+                    {loading ? (
+                        <>
+                            <LoadingSpinner size="w-5 h-5" />
+                            <span>Analyzing...</span>
+                        </>
+                    ) : (
+                        <>
+                            <AnalyticsIcon className="w-5 h-5 hidden sm:block" />
+                            <span className="sm:hidden">📊 Analyze Pairs</span>
+                            <span className="hidden sm:inline">Analyze Pairs</span>
+                        </>
+                    )}
+                </button>
 
-            {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-            {successMessage && (
-                <Alert severity="success" sx={{ mt: 2 }} onClose={onClearSuccessMessage}>
-                    {successMessage}
-                </Alert>
+                {data && (
+                    <div className="text-sm text-gray-400 text-center md:text-left">
+                        Analyzed {data.summary.totalDrawsAnalyzed} draws • Found {data.summary.pairsFound} unique pairs
+                    </div>
+                )}
+            </div>
+
+            {error && (
+                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                    {error}
+                </div>
             )}
-        </Paper>
+
+            {successMessage && (
+                <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm flex items-center justify-between">
+                    <span>{successMessage}</span>
+                    <button
+                        onClick={onClearSuccessMessage}
+                        className="ml-2 p-1 hover:bg-green-500/20 rounded transition-colors"
+                    >
+                        <CloseIcon />
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 

@@ -1,16 +1,18 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import {
-    Box,
-    Divider,
-    CircularProgress
-} from '@mui/material';
 import { useStore } from '@/app/store/store';
 import MonthlyPairTracking from './MonthlyPairTracking';
 import ControlBar from './ControlBar';
 import PairAnalysisSummary from './PairAnalysisSummary';
 import PairInsights from './PairInsights';
 import PairFrequencyTable from './PairFrequencyTable';
+
+// Loading Spinner Component
+const LoadingSpinner = () => (
+    <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    </div>
+);
 
 const PairAnalysis = () => {
     const [data, setData] = useState(null);
@@ -21,23 +23,23 @@ const PairAnalysis = () => {
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [addingToFavorites, setAddingToFavorites] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    
+
     // Pair type selection state
     const [pairType, setPairType] = useState('first-second');
-    
+
     // Monthly tracking state
     const [selectedMonth, setSelectedMonth] = useState('');
     const [selectedYear, setSelectedYear] = useState('2025');
     const [monthlyData, setMonthlyData] = useState(null);
     const [loadingMonthly, setLoadingMonthly] = useState(false);
     const [monthlyExpandedPairs, setMonthlyExpandedPairs] = useState(new Set());
-    
+
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const analyzePairs = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const response = await fetch(`/api/pair-analysis?pairType=${pairType}`, {
                 method: 'GET',
@@ -51,7 +53,7 @@ const PairAnalysis = () => {
             }
 
             const result = await response.json();
-            
+
             if (result.success) {
                 setData(result);
             } else {
@@ -73,21 +75,21 @@ const PairAnalysis = () => {
         // Analyze current month automatically
         analyzeMonthlyPairs(currentMonth, selectedYear);
     }, []);
-    
+
     // Re-analyze when pair type changes
     useEffect(() => {
         if (pairType) {
             analyzePairs();
         }
     }, [pairType]);
-    
+
     // Analyze monthly pairs for tracked pairs (0,1), (1,2), (2,3)
     const analyzeMonthlyPairs = async (month = selectedMonth, year = selectedYear) => {
         if (!month || !year) return;
-        
+
         setLoadingMonthly(true);
         setError(null);
-        
+
         try {
             const response = await fetch('/api/pair-analysis/monthly-tracker', {
                 method: 'POST',
@@ -102,7 +104,7 @@ const PairAnalysis = () => {
             }
 
             const result = await response.json();
-            
+
             if (result.success) {
                 setMonthlyData(result);
             } else {
@@ -114,20 +116,20 @@ const PairAnalysis = () => {
             setLoadingMonthly(false);
         }
     };
-    
+
     // Handle month/year change
     const handleMonthChange = (event) => {
         const newMonth = event.target.value;
         setSelectedMonth(newMonth);
         analyzeMonthlyPairs(newMonth, selectedYear);
     };
-    
+
     const handleYearChange = (event) => {
         const newYear = event.target.value;
         setSelectedYear(newYear);
         analyzeMonthlyPairs(selectedMonth, newYear);
     };
-    
+
     // Toggle expand for monthly pair details
     const handleToggleMonthlyExpand = (pairKey) => {
         const newExpanded = new Set(monthlyExpandedPairs);
@@ -147,10 +149,10 @@ const PairAnalysis = () => {
 
     const sortedPairs = React.useMemo(() => {
         if (!data?.pairs) return [];
-        
+
         return [...data.pairs].sort((a, b) => {
             let aValue, bValue;
-            
+
             switch (orderBy) {
                 case 'pair':
                     aValue = a.first * 10 + a.second;
@@ -171,7 +173,7 @@ const PairAnalysis = () => {
                 default:
                     return 0;
             }
-            
+
             if (order === 'desc') {
                 return bValue < aValue ? -1 : bValue > aValue ? 1 : 0;
             } else {
@@ -179,24 +181,6 @@ const PairAnalysis = () => {
             }
         });
     }, [data, order, orderBy]);
-
-    const getCategoryColor = (category) => {
-        switch (category) {
-            case 'high': return 'success';
-            case 'medium': return 'warning';
-            case 'low': return 'error';
-            default: return 'default';
-        }
-    };
-
-    const getCategoryIcon = (category) => {
-        switch (category) {
-            case 'high': return <TrendingUpIcon fontSize="small" />;
-            case 'medium': return <NumbersIcon fontSize="small" />;
-            case 'low': return <TrendingDownIcon fontSize="small" />;
-            default: return null;
-        }
-    };
 
     const handleToggleExpand = (pairKey) => {
         const newExpanded = new Set(expandedRows);
@@ -208,53 +192,8 @@ const PairAnalysis = () => {
         setExpandedRows(newExpanded);
     };
 
-    // Helper function to determine pattern
-    const getPattern = (numbers) => {
-        const bCount = numbers.filter(n => n <= 4).length;
-        const aCount = numbers.filter(n => n > 4).length;
-        
-        if (bCount === 3) return 'BBB';
-        if (bCount === 2) return 'BBA';
-        if (bCount === 1) return 'BAA';
-        if (bCount === 0) return 'AAA';
-        return 'UNKNOWN';
-    };
-
-    const handleToggleFavorite = async (combo, pairData) => {
-        const numbers = combo.numbers;
-        
-        // Check if already favorite
-        if (isFavorite(numbers)) {
-            // Find and remove the favorite
-            const favToRemove = favorites.find(fav => fav.combination.join('-') === numbers.join('-'));
-            if (favToRemove) {
-                removeFavorite(favToRemove.id);
-                setSuccessMessage(`Removed ${numbers.join('-')} from favorites`);
-                setTimeout(() => setSuccessMessage(''), 3000);
-            }
-            return;
-        }
-        
-        // Add to favorites
-        const pattern = getPattern(numbers);
-        
-        const favorite = {
-            combination: numbers,
-            combinationCount: combo.frequency,
-            combinationPercentage: combo.percentage,
-            pair: pairData.pair,
-            pairCount: pairData.frequency,
-            pairPercentage: pairData.percentage,
-            pattern: pattern
-        };
-        
-        addFavorite(favorite);
-        setSuccessMessage(`Added ${numbers.join('-')} to favorites`);
-        setTimeout(() => setSuccessMessage(''), 3000);
-    };
-
     return (
-        <Box sx={{ py: { xs: 1, md: 3 } }}>
+        <div className="py-1 md:py-6">
             <MonthlyPairTracking
                 selectedMonth={selectedMonth}
                 selectedYear={selectedYear}
@@ -267,7 +206,7 @@ const PairAnalysis = () => {
                 onToggleExpand={handleToggleMonthlyExpand}
             />
 
-            <Divider sx={{ my: 4 }} />
+            <hr className="my-8 border-t border-white/10" />
 
             <ControlBar
                 loading={loading}
@@ -285,9 +224,7 @@ const PairAnalysis = () => {
             <PairInsights data={data} />
 
             {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-                    <CircularProgress />
-                </Box>
+                <LoadingSpinner />
             ) : data ? (
                 <PairFrequencyTable
                     sortedPairs={sortedPairs}
@@ -299,7 +236,7 @@ const PairAnalysis = () => {
                     addingToFavorites={addingToFavorites}
                 />
             ) : null}
-        </Box>
+        </div>
     );
 };
 

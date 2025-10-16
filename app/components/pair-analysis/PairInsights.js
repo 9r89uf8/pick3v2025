@@ -1,17 +1,9 @@
 'use client';
 import React from 'react';
-import {
-    Paper,
-    Typography,
-    Grid,
-    Box,
-    Stack,
-    Chip
-} from '@mui/material';
 
 const PairInsights = ({ data }) => {
     if (!data) return null;
-    
+
     const getPossibilityLabel = () => {
         switch(data.pairType) {
             case 'first-third':
@@ -24,48 +16,52 @@ const PairInsights = ({ data }) => {
     };
 
     return (
-        <Paper sx={{ p: 3, mb: 3, background: 'rgba(255, 255, 255, 0.02)' }}>
-            <Typography variant="h5" gutterBottom sx={{ color: '#FFC300' }}>
+        <div className="glass-card bg-white/5 p-4 md:p-6 mb-6 rounded-xl">
+            <h2 className="text-xl md:text-2xl font-bold text-yellow-400 mb-3">
                 Key Pattern Discovery
-            </Typography>
-            <Typography variant="body1" paragraph>
+            </h2>
+            <p className="text-base text-gray-300 mb-6">
                 {data.insights.correlationNote}
-            </Typography>
-            
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>Most Frequent Pairs</Typography>
-                    <Box sx={{ pl: 2 }}>
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">
+                        Most Frequent Pairs
+                    </h3>
+                    <div className="space-y-3 pl-4">
                         {data.insights.mostFrequent.slice(0, 5).map((pair, index) => (
-                            <Box key={index} sx={{ mb: 1 }}>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Chip label={pair.pair} color="success" />
-                                    <Typography variant="body2">
-                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
-                                    </Typography>
-                                </Stack>
-                            </Box>
+                            <div key={index} className="flex items-center gap-3">
+                                <span className="inline-block px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-bold">
+                                    {pair.pair}
+                                </span>
+                                <p className="text-sm text-gray-300">
+                                    {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
+                                </p>
+                            </div>
                         ))}
-                    </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>Least Frequent Pairs</Typography>
-                    <Box sx={{ pl: 2 }}>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">
+                        Least Frequent Pairs
+                    </h3>
+                    <div className="space-y-3 pl-4">
                         {data.insights.leastFrequent.slice(0, 5).map((pair, index) => (
-                            <Box key={index} sx={{ mb: 1 }}>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Chip label={pair.pair} color="error" />
-                                    <Typography variant="body2">
-                                        {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
-                                    </Typography>
-                                </Stack>
-                            </Box>
+                            <div key={index} className="flex items-center gap-3">
+                                <span className="inline-block px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm font-bold">
+                                    {pair.pair}
+                                </span>
+                                <p className="text-sm text-gray-300">
+                                    {pair.frequency} times ({pair.percentage}%) - {pair.possibleThirds} {getPossibilityLabel()}
+                                </p>
+                            </div>
                         ))}
-                    </Box>
-                </Grid>
-            </Grid>
-        </Paper>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 

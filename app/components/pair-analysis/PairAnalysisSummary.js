@@ -1,69 +1,47 @@
 'use client';
 import React from 'react';
-import {
-    Grid,
-    Card,
-    CardContent,
-    Typography
-} from '@mui/material';
 
 const PairAnalysisSummary = ({ data }) => {
     if (!data) return null;
 
     return (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={3}>
-                <Card sx={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <CardContent>
-                        <Typography color="textSecondary" gutterBottom>
-                            Total Draws Analyzed
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#FFC300' }}>
-                            {data.summary.totalDrawsAnalyzed.toLocaleString()}
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-                <Card sx={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <CardContent>
-                        <Typography color="textSecondary" gutterBottom>
-                            Unique Pairs Found
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#2196F3' }}>
-                            {data.summary.pairsFound} / 45
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-                <Card sx={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <CardContent>
-                        <Typography color="textSecondary" gutterBottom>
-                            High Frequency Pairs
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#4CAF50' }}>
-                            {data.insights.categoryStats.high}
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-                <Card sx={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <CardContent>
-                        <Typography color="textSecondary" gutterBottom>
-                            Low Frequency Pairs
-                        </Typography>
-                        <Typography variant="h4" sx={{ color: '#f44336' }}>
-                            {data.insights.categoryStats.low}
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Grid>
-        </Grid>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+            <div className="glass-card bg-white/5 p-4 md:p-6 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">
+                    Total Draws Analyzed
+                </p>
+                <p className="text-3xl md:text-4xl font-bold text-yellow-400">
+                    {data.summary.totalDrawsAnalyzed.toLocaleString()}
+                </p>
+            </div>
+
+            <div className="glass-card bg-white/5 p-4 md:p-6 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">
+                    Unique Pairs Found
+                </p>
+                <p className="text-3xl md:text-4xl font-bold text-blue-400">
+                    {data.summary.pairsFound} / 45
+                </p>
+            </div>
+
+            <div className="glass-card bg-white/5 p-4 md:p-6 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">
+                    High Frequency Pairs
+                </p>
+                <p className="text-3xl md:text-4xl font-bold text-green-400">
+                    {data.insights.categoryStats.high}
+                </p>
+            </div>
+
+            <div className="glass-card bg-white/5 p-4 md:p-6 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">
+                    Low Frequency Pairs
+                </p>
+                <p className="text-3xl md:text-4xl font-bold text-red-400">
+                    {data.insights.categoryStats.low}
+                </p>
+            </div>
+        </div>
     );
 };
 

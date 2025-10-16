@@ -1,26 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Paper,
-    Typography,
-    Card,
-    CardContent,
-    Grid,
-    Chip,
-    CircularProgress,
-    Alert,
-    Button,
-    Divider,
-    List,
-    ListItem,
-    ListItemText,
-    useTheme,
-    useMediaQuery
-} from '@mui/material';
-import {
-    Download as DownloadIcon
-} from '@mui/icons-material';
-import {
     PieChart,
     Pie,
     Cell,
@@ -31,7 +10,6 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend
 } from 'recharts';
 import {
     fetchPairAnalysis,
@@ -41,10 +19,48 @@ import {
     exportPairDataToCSV
 } from '@/app/services/pairAnalysisService';
 
+// Download Icon SVG Component
+const DownloadIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+);
+
+// Loading Spinner Component
+const LoadingSpinner = () => (
+    <div className="flex justify-center items-center p-8">
+        <div className="relative w-12 h-12">
+            <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+        </div>
+    </div>
+);
+
+const CalendarStatsIcon = () => (
+    <svg className="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+    </svg>
+);
+
+const StarGridIcon = () => (
+    <svg className="w-5 h-5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 7.5h.01M12 7.5h.01M18 7.5h.01M6 12h.01M12 12h.01M18 12h.01M6 16.5h.01M12 16.5h.01M18 16.5h.01M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7c0-1.1.9-2 2-2z" />
+    </svg>
+);
+
+const TargetHitsIcon = () => (
+    <svg className="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+    </svg>
+);
+
+const TimelineIcon = () => (
+    <svg className="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m4-3a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+);
+
 const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
     const [chartData, setChartData] = useState([]);
@@ -53,14 +69,14 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
     const [colorMap, setColorMap] = useState({});
     const [error, setError] = useState(null);
     const [totalHits, setTotalHits] = useState(0);
-    
+
     // Target pairs to track exclusively
     const TARGET_PAIRS = {
         '1st & 2nd': ['0-1', '0-2', '1-2', '3-4', '1-4'],
         '1st & 3rd': ['1-8', '1-9', '0-9', '0-7', '0-8'],
         '2nd & 3rd': ['7-8', '8-9', '6-7', '5-7', '5-8']
     };
-    
+
     // Flatten all target pairs for easy checking
     const ALL_TARGET_PAIRS = [
         ...TARGET_PAIRS['1st & 2nd'],
@@ -78,10 +94,10 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
 
         try {
             const result = await fetchPairAnalysis(selectedMonth, selectedYear);
-            
+
             if (result.success) {
                 setData(result.data);
-                
+
                 const formatted = formatPairDataForChart(result, ALL_TARGET_PAIRS);
                 setChartData(formatted.chartData);
                 setTargetPairStats(formatted.targetPairStats);
@@ -101,20 +117,20 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
 
     const handleExportCSV = () => {
         if (!targetPairStats) return;
-        
+
         let csvContent = `Target Pair Analysis - ${data?.summary.month} ${data?.summary.year}\n`;
         csvContent += 'Pair,Position,Count,Draws\n';
-        
+
         Object.entries(targetPairStats).forEach(([pair, stats]) => {
             const position = TARGET_PAIRS['1st & 2nd'].includes(pair) ? '1st & 2nd' :
                             TARGET_PAIRS['1st & 3rd'].includes(pair) ? '1st & 3rd' : '2nd & 3rd';
             const drawNumbers = stats.draws.map(d => d.drawIndex).join(';');
             csvContent += `${pair},${position},${stats.count},"${drawNumbers}"\n`;
         });
-        
+
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
-        
+
         const link = document.createElement('a');
         link.href = url;
         link.download = `target-pairs-${data?.summary.month}-${data?.summary.year}.csv`;
@@ -127,13 +143,13 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
     // Calculate distribution data for charts
     const getDistributionData = () => {
         if (!targetPairStats) return { pieData: [], barData: [] };
-        
+
         const sectionTotals = {
             '1st & 2nd': 0,
             '1st & 3rd': 0,
             '2nd & 3rd': 0
         };
-        
+
         // Calculate totals for each section
         Object.entries(TARGET_PAIRS).forEach(([position, pairs]) => {
             pairs.forEach(pair => {
@@ -143,9 +159,9 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
                 }
             });
         });
-        
+
         const grandTotal = Object.values(sectionTotals).reduce((sum, count) => sum + count, 0);
-        
+
         // Pie chart data
         const pieData = Object.entries(sectionTotals).map(([position, count]) => ({
             name: position,
@@ -153,7 +169,7 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
             percentage: grandTotal > 0 ? ((count / grandTotal) * 100).toFixed(1) : 0,
             color: colorMap[position]
         })).filter(item => item.value > 0); // Only show sections with data
-        
+
         // Bar chart data - individual pairs
         const barData = [];
         Object.entries(TARGET_PAIRS).forEach(([position, pairs]) => {
@@ -167,307 +183,337 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
                 });
             });
         });
-        
+
         return { pieData, barData, sectionTotals, grandTotal };
     };
 
-    const CustomTooltip = ({ active, payload }) => {
-        if (active && payload && payload.length > 0) {
-            const point = payload[0].payload;
-            if (!point) return null;
-            
-            return (
-                <Paper sx={{ p: 2, border: '1px solid rgba(255, 195, 0, 0.3)' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Draw {point.drawIndex} - {point.drawDate}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                        Numbers: {point.numbers.join('-')}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        Pair: {point.pair}
-                    </Typography>
-                </Paper>
-            );
-        }
-        return null;
-    };
-
-
     if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
+        return <LoadingSpinner />;
     }
 
     if (error) {
         return (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
                 {error}
-            </Alert>
+            </div>
         );
     }
 
     if (!data) {
         return (
-            <Alert severity="info">
+            <div className="rounded-3xl border border-blue-500/30 bg-blue-500/10 p-4 text-blue-300">
                 No pair analysis data available
-            </Alert>
+            </div>
         );
     }
 
+    const summaryCards = [
+        {
+            label: 'Total Draws Reviewed',
+            value: data.summary.totalDraws,
+            valueClass: 'text-sky-300',
+            accent: 'from-sky-400/15 via-slate-900/40 to-slate-900/80',
+            icon: <CalendarStatsIcon />,
+            helper: 'Monthly dataset processed'
+        },
+        {
+            label: 'Target Pairs Monitored',
+            value: ALL_TARGET_PAIRS.length,
+            valueClass: 'text-amber-300',
+            accent: 'from-amber-400/20 via-slate-900/40 to-slate-900/80',
+            icon: <StarGridIcon />,
+            helper: 'Most active combinations'
+        },
+        {
+            label: 'Total Pair Hits',
+            value: totalHits,
+            valueClass: 'text-emerald-300',
+            accent: 'from-emerald-400/20 via-slate-900/40 to-slate-900/80',
+            icon: <TargetHitsIcon />,
+            helper: 'Across all tracked positions'
+        },
+        {
+            label: 'Draws With Hits',
+            value: targetPairTimeline.length,
+            valueClass: 'text-indigo-200',
+            accent: 'from-indigo-400/20 via-slate-900/40 to-slate-900/80',
+            icon: <TimelineIcon />,
+            helper: 'Distinct draws producing hits'
+        }
+    ];
+
     return (
-        <Paper 
-            elevation={3}
-            sx={{ 
-                p: { xs: 2, md: 3 },
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 195, 0, 0.2)',
-                borderRadius: 2
-            }}
-        >
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h5" className="gradient-text" sx={{ fontWeight: 'bold' }}>
-                    Pair Tracking - {data.summary.month} {data.summary.year}
-                </Typography>
-                <Button
-                    startIcon={<DownloadIcon />}
-                    onClick={handleExportCSV}
-                    variant="outlined"
-                    size="small"
-                >
-                    Export CSV
-                </Button>
-            </Box>
+        <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-slate-950/60 p-5 md:p-8 shadow-[0_35px_90px_-45px_rgba(15,23,42,1)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.12),transparent_60%)] opacity-70" />
+            <div className="pointer-events-none absolute -top-32 right-[-20%] h-72 w-72 rounded-full bg-sky-500/18 blur-[140px]" />
+            <div className="pointer-events-none absolute -bottom-36 left-[-18%] h-80 w-80 rounded-full bg-amber-400/18 blur-[140px]" />
 
-            {/* Summary Stats */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={6} md={3}>
-                    <Card>
-                        <CardContent sx={{ textAlign: 'center' }}>
-                            <Typography variant="h4">{data.summary.totalDraws}</Typography>
-                            <Typography variant="caption">Total Draws</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <Card>
-                        <CardContent sx={{ textAlign: 'center' }}>
-                            <Typography variant="h4">{ALL_TARGET_PAIRS.length}</Typography>
-                            <Typography variant="caption">Target Pairs</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <Card>
-                        <CardContent sx={{ textAlign: 'center' }}>
-                            <Typography variant="h4">{totalHits}</Typography>
-                            <Typography variant="caption">Total Hits</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <Card>
-                        <CardContent sx={{ textAlign: 'center' }}>
-                            <Typography variant="h4">{targetPairTimeline.length}</Typography>
-                            <Typography variant="caption">Draws with Hits</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+            <div className="relative space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.4em] text-slate-300/70">Monthly Spotlight</p>
+                        <h2 className="mt-2 text-3xl font-bold leading-tight text-white md:text-[2.5rem]">
+                            <span className="gradient-text">Pair Tracking</span> · {data.summary.month} {data.summary.year}
+                        </h2>
+                        <p className="mt-3 max-w-2xl text-sm text-slate-300/90 md:text-base">
+                            Zero in on the highest-performing digit pairs by position, explore hit distribution patterns, and surface
+                            the draws powering your strategy.
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleExportCSV}
+                        className="inline-flex items-center gap-2 self-start rounded-xl border border-blue-400/40 bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-100 transition hover:-translate-y-0.5 hover:border-blue-300/70 hover:bg-blue-500/30 hover:shadow-[0_18px_35px_-18px_rgba(59,130,246,0.7)] focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                    >
+                        <DownloadIcon />
+                        <span>Export CSV</span>
+                    </button>
+                </div>
 
-            {/* Distribution Charts */}
-            {totalHits > 0 && (() => {
-                const { pieData, barData, sectionTotals, grandTotal } = getDistributionData();
-                
-                return (
-                    <Grid container spacing={3} sx={{ mb: 3 }}>
-                        {/* Pie Chart - Section Distribution */}
-                        <Grid item xs={12} md={6}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ mb: 2 }}>
-                                        Section Distribution
-                                    </Typography>
-                                    <Box sx={{ height: 300 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={pieData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={60}
-                                                    outerRadius={100}
-                                                    dataKey="value"
-                                                    label={({ name, percentage }) => `${name}: ${percentage}%`}
-                                                    labelLine={false}
-                                                >
-                                                    {pieData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip 
-                                                    formatter={(value, name) => [`${value} hits (${pieData.find(p => p.name === name)?.percentage}%)`, name]}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </Box>
-                                    
-                                    {/* Legend */}
-                                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
-                                        {Object.entries(sectionTotals).map(([position, count]) => (
-                                            <Box key={position} sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Box 
-                                                    sx={{ 
-                                                        width: 12, 
-                                                        height: 12, 
-                                                        backgroundColor: colorMap[position], 
-                                                        mr: 1,
-                                                        borderRadius: 1
-                                                    }} 
-                                                />
-                                                <Typography variant="caption">
-                                                    {position}: {count}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        
-                        {/* Bar Chart - Individual Pairs */}
-                        <Grid item xs={12} md={6}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ mb: 2 }}>
-                                        Individual Pair Distribution
-                                    </Typography>
-                                    <Box sx={{ height: 300 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                                                <XAxis 
-                                                    dataKey="pair" 
-                                                    tick={{ fill: theme.palette.text.secondary, fontSize: 10 }}
-                                                    angle={-45}
-                                                    textAnchor="end"
-                                                    height={60}
-                                                />
-                                                <YAxis tick={{ fill: theme.palette.text.secondary }} />
-                                                <Tooltip 
-                                                    formatter={(value, name, props) => [
-                                                        `${value} hits`, 
-                                                        `${props.payload.pair} (${props.payload.position})`
-                                                    ]}
-                                                />
-                                                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                                                    {barData.map((entry, index) => (
-                                                        <Cell key={`bar-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                );
-            })()}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {summaryCards.map((card, index) => (
+                        <div
+                            key={index}
+                            className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.95)] transition-all duration-200 hover:-translate-y-1 hover:border-accent-gold/30"
+                        >
+                            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${card.accent} blur-[80px] opacity-80`} />
+                            <div className="relative flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-[0.7rem] uppercase tracking-[0.3em] text-slate-300/70">{card.label}</p>
+                                    <p className={`mt-3 text-3xl font-semibold md:text-4xl ${card.valueClass}`}>{card.value}</p>
+                                    <p className="mt-3 text-xs text-slate-400/90">{card.helper}</p>
+                                </div>
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.08] shadow-inner shadow-black/30">
+                                    {card.icon}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
-            {/* Target Pairs Timeline */}
-            {targetPairTimeline.length > 0 && (
-                <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2 }}>
-                            Target Pairs Timeline - {totalHits} Total Hits
-                        </Typography>
-                        
-                        {/* Simple timeline display */}
-                        <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                {totalHits > 0 && (() => {
+                    const { pieData, barData, sectionTotals, grandTotal } = getDistributionData();
+
+                    return (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_25px_60px_-35px_rgba(15,23,42,0.95)]">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white">Section Distribution</h3>
+                                        <p className="mt-1 text-xs text-slate-400/90">Hit share across position groupings</p>
+                                    </div>
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-slate-300/70">
+                                        {grandTotal} hits
+                                    </span>
+                                </div>
+                                <div className="mt-6 h-[320px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <defs>
+                                                {pieData.map((entry, index) => (
+                                                    <linearGradient key={index} id={`pieGradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor={entry.color} stopOpacity={0.9} />
+                                                        <stop offset="100%" stopColor={entry.color} stopOpacity={0.5} />
+                                                    </linearGradient>
+                                                ))}
+                                            </defs>
+                                            <Pie
+                                                data={pieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={70}
+                                                outerRadius={115}
+                                                paddingAngle={4}
+                                                dataKey="value"
+                                                label={({ name, percentage }) => `${percentage}% · ${name}`}
+                                                labelLine={false}
+                                            >
+                                                {pieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={`url(#pieGradient-${index})`} stroke="rgba(15,23,42,0.6)" strokeWidth={1.5} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+                                                    borderRadius: '16px',
+                                                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                                                    color: '#e2e8f0',
+                                                    boxShadow: '0 18px 40px -28px rgba(15, 23, 42, 0.95)'
+                                                }}
+                                                formatter={(value, name) => [`${value} hits (${pieData.find(p => p.name === name)?.percentage}%)`, name]}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="mt-6 grid grid-cols-1 gap-3 text-xs text-slate-300/80 sm:grid-cols-3">
+                                    {Object.entries(sectionTotals).map(([position, count]) => (
+                                        <div key={position} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2">
+                                            <span
+                                                className="h-3 w-3 rounded-full border border-white/40"
+                                                style={{ backgroundColor: colorMap[position] }}
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-white/90">{position}</span>
+                                                <span>{count} hits</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_25px_60px_-35px_rgba(15,23,42,0.95)]">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-white">Pair Performance</h3>
+                                        <p className="mt-1 text-xs text-slate-400/90">Individual hit counts by pair</p>
+                                    </div>
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-slate-300/70">
+                                        Focus pairs
+                                    </span>
+                                </div>
+                                <div className="mt-6 h-[320px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={barData} margin={{ top: 20, right: 12, left: -10, bottom: 40 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.18)" />
+                                            <XAxis
+                                                dataKey="pair"
+                                                tick={{ fill: '#cbd5f5', fontSize: 11 }}
+                                                axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                                                tickLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                                            />
+                                            <YAxis
+                                                tick={{ fill: '#cbd5f5', fontSize: 12 }}
+                                                axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                                                tickLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+                                                    borderRadius: '16px',
+                                                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                                                    color: '#e2e8f0',
+                                                    boxShadow: '0 18px 40px -28px rgba(15, 23, 42, 0.95)'
+                                                }}
+                                                formatter={(value, name, props) => [
+                                                    `${value} hits`,
+                                                    `${props.payload.pair} · ${props.payload.position}`
+                                                ]}
+                                            />
+                                            <Bar dataKey="count" radius={[9, 9, 0, 0]} minPointSize={2}>
+                                                {barData.map((entry, index) => (
+                                                    <Cell key={`bar-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {targetPairTimeline.length > 0 && (
+                    <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_25px_60px_-35px_rgba(15,23,42,0.95)]">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-semibold text-white">Target Pairs Timeline</h3>
+                                <p className="mt-1 text-xs text-slate-400/90">
+                                    {totalHits} hits across {targetPairTimeline.length} draws, latest first
+                                </p>
+                            </div>
+                            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-slate-300/70">
+                                Chronology
+                            </span>
+                        </div>
+                        <div className="mt-5 max-h-[400px] space-y-3 overflow-y-auto pr-1">
                             {[...targetPairTimeline].reverse().map((draw, index) => (
-                                <Card key={index} sx={{ mb: 1, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-                                    <CardContent sx={{ py: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <Typography variant="body2">
-                                                <strong>Draw {draw.drawIndex}</strong> ({draw.drawDate}) - Numbers: {draw.numbers.join('-')}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                                {Object.entries(draw.targetPairs).map(([pair, positions]) => {
-                                                    const color = positions.includes('1st & 2nd') ? colorMap['1st & 2nd'] :
-                                                                 positions.includes('1st & 3rd') ? colorMap['1st & 3rd'] : 
-                                                                 colorMap['2nd & 3rd'];
-                                                    return (
-                                                        <Chip
-                                                            key={pair}
-                                                            label={`${pair} (${positions.join(', ')})`}
-                                                            size="small"
-                                                            sx={{
-                                                                backgroundColor: color,
-                                                                color: 'white',
-                                                                fontWeight: 'bold'
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                            </Box>
-                                        </Box>
-                                    </CardContent>
-                                </Card>
+                                <div
+                                    key={index}
+                                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 p-4 transition hover:border-accent-gold/40"
+                                >
+                                    <div className="absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b from-accent-gold/85 via-accent-gold/45 to-transparent" />
+                                    <div className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <p className="text-sm text-slate-300/90">
+                                                <span className="font-semibold text-white">Draw {draw.drawIndex}</span>
+                                                <span className="mx-1 text-white/40">•</span>
+                                                {draw.drawDate}
+                                            </p>
+                                            <p className="mt-1 text-xs uppercase tracking-[0.3em] text-slate-400/80">
+                                                Numbers · {draw.numbers.join(' - ')}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(draw.targetPairs).map(([pair, positions]) => {
+                                                const color = positions.includes('1st & 2nd') ? colorMap['1st & 2nd'] :
+                                                             positions.includes('1st & 3rd') ? colorMap['1st & 3rd'] :
+                                                             colorMap['2nd & 3rd'];
+                                                return (
+                                                    <span
+                                                        key={pair}
+                                                        className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white shadow-[0_10px_25px_-18px_rgba(15,23,42,1)]"
+                                                        style={{ backgroundColor: color }}
+                                                    >
+                                                        {pair}
+                                                        <span className="text-white/80">({positions.join(', ')})</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
                             ))}
-                        </Box>
-                    </CardContent>
-                </Card>
-            )}
+                        </div>
+                    </div>
+                )}
 
-            {/* Target Pairs Statistics */}
-            <Typography variant="h6" sx={{ mb: 2 }}>
-                Target Pairs Statistics
-            </Typography>
-            
-            {Object.entries(TARGET_PAIRS).map(([position, pairs]) => (
-                <Card key={position} sx={{ mb: 2 }}>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Box 
-                                sx={{ 
-                                    width: 16, 
-                                    height: 16, 
-                                    backgroundColor: colorMap[position], 
-                                    mr: 2, 
-                                    borderRadius: 1 
-                                }} 
-                            />
-                            <Typography variant="h6">{position} Position Pairs</Typography>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            {pairs.map((pair) => {
-                                const stats = targetPairStats[pair];
-                                const count = stats?.count || 0;
-                                return (
-                                    <Chip
-                                        key={pair}
-                                        label={`${pair} (${count}x)`}
-                                        size="small"
-                                        variant="filled"
-                                        sx={{
-                                            backgroundColor: count > 0 ? colorMap[position] : 'rgba(128, 128, 128, 0.3)',
-                                            color: 'white',
-                                            fontWeight: count > 0 ? 'bold' : 'normal'
-                                        }}
+                <div className="space-y-3">
+                    <h3 className="text-xl font-semibold text-white">Target Pairs At A Glance</h3>
+                    <p className="text-sm text-slate-400/90">
+                        Every tracked pair, grouped by position. Hot pairs glow brighter with each hit.
+                    </p>
+                </div>
+                <div className="space-y-5">
+                    {Object.entries(TARGET_PAIRS).map(([position, pairs]) => (
+                        <div
+                            key={position}
+                            className="rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_25px_60px_-35px_rgba(15,23,42,0.95)]"
+                        >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3">
+                                    <span
+                                        className="h-4 w-4 rounded-full border border-white/20 shadow-[0_0_0_4px_rgba(255,255,255,0.06)]"
+                                        style={{ backgroundColor: colorMap[position] }}
                                     />
-                                );
-                            })}
-                        </Box>
-                    </CardContent>
-                </Card>
-            ))}
-        </Paper>
+                                    <h4 className="text-lg font-semibold text-white">{position} Position Pairs</h4>
+                                </div>
+                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-slate-300/70">
+                                    {pairs.length} pairs
+                                </span>
+                            </div>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {pairs.map((pair) => {
+                                    const stats = targetPairStats[pair];
+                                    const count = stats?.count || 0;
+                                    return (
+                                        <span
+                                            key={pair}
+                                            className={`inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs text-white transition ${
+                                                count > 0 ? 'font-semibold shadow-[0_18px_40px_-28px_rgba(15,23,42,1)]' : 'opacity-70'
+                                            }`}
+                                            style={{
+                                                backgroundColor: count > 0 ? colorMap[position] : 'rgba(128, 128, 128, 0.3)'
+                                            }}
+                                        >
+                                            {pair} ({count}x)
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 };
 

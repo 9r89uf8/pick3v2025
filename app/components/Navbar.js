@@ -1,55 +1,43 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AppBar, Toolbar, IconButton, Menu, MenuItem, Button, Box } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import DehazeIcon from '@mui/icons-material/Dehaze';
-import { AccountCircle } from '@mui/icons-material';
-import { useStore } from '../store/store'; // Ensure this path is correct according to your structure
+import { useStore } from '../store/store';
 
 
 const Navbar = () => {
     const router = useRouter();
     const user = useStore((state) => state.user);
-    const [anchorEl, setAnchorEl] = useState(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const handleMenuOpen = (event) => {
-        setAnchorEl(event.currentTarget);
+    const handleMenuToggle = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
     };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
-
 
     return (
-        <AppBar position="static" sx={{ backgroundColor: '#16242f' }}>
-            <Toolbar>
-                <Box display="flex" alignItems="center" flexGrow={1}>
-                    <img
-                        src="https://chicagocarhelp.s3.us-east-2.amazonaws.com/Untitled+design+(2).png"
-                        alt="logo"
-                        style={{ width: 60, height: 'auto', marginRight: 16 }}
-                    />
-                    <Button color="inherit" onClick={() => router.push('/')}>Home</Button>
-                    <Button color="inherit" onClick={() => router.push('/pair-tracking')}>Pair Tracking</Button>
-                </Box>
+        <nav className="bg-[#16242f] shadow-md">
+            <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                    </div>
 
-                {/*<div>*/}
-                {/*    <IconButton*/}
-                {/*        size="large"*/}
-                {/*        edge="end"*/}
-                {/*        aria-label="account of current user"*/}
-                {/*        aria-controls="menu-appbar"*/}
-                {/*        aria-haspopup="true"*/}
-                {/*        onClick={handleMenuOpen}*/}
-                {/*        color="inherit"*/}
-                {/*    >*/}
-                {/*        <DehazeIcon />*/}
-                {/*    </IconButton>*/}
-                {/*</div>*/}
-            </Toolbar>
-        </AppBar>
+                    {/* Mobile menu button (currently not used) */}
+                    {/*<div>*/}
+                    {/*    <button*/}
+                    {/*        onClick={handleMenuToggle}*/}
+                    {/*        className="p-2 text-white hover:bg-white/10 rounded-full transition-colors"*/}
+                    {/*        aria-label="account of current user"*/}
+                    {/*        aria-controls="menu-appbar"*/}
+                    {/*        aria-haspopup="true"*/}
+                    {/*    >*/}
+                    {/*        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">*/}
+                    {/*            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>*/}
+                    {/*        </svg>*/}
+                    {/*    </button>*/}
+                    {/*</div>*/}
+                </div>
+            </div>
+        </nav>
     );
 };
 

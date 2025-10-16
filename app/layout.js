@@ -1,19 +1,16 @@
 // app/layout.jsx
 import React from 'react';
 import Navbar from "@/app/components/Navbar";
-import './styles/globals.css';
-
+import "./globals.css";
 
 const Layout = ({ children }) => {
   return (
-      <html lang="es">
-      <body>
-      <Navbar/>
-      <main style={{ paddingBottom: '90px' }}>{children}</main>
+    <html lang="es" className="bg-background text-foreground">
+      <body className="min-h-screen bg-background text-foreground">
+        <main className="pb-[90px]">{children}</main>
       </body>
-      </html>
+    </html>
   );
 };
-
 
 export default Layout;
