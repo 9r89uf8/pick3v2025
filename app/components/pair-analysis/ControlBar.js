@@ -18,6 +18,12 @@ const LoadingSpinner = ({ size = "w-5 h-5" }) => (
     <div className={`animate-spin rounded-full border-b-2 border-current ${size}`}></div>
 );
 
+const DownloadIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v12m0 0l4-4m-4 4l-4-4m12 8H8a2 2 0 01-2-2V6" />
+    </svg>
+);
+
 const ControlBar = ({
     loading,
     data,
@@ -26,7 +32,8 @@ const ControlBar = ({
     pairType,
     onPairTypeChange,
     onAnalyzePairs,
-    onClearSuccessMessage
+    onClearSuccessMessage,
+    onDownloadData
 }) => {
     const pairTypeOptions = [
         { value: 'first-second', label: '1st & 2nd Numbers' },
@@ -55,24 +62,36 @@ const ControlBar = ({
                     </select>
                 </div>
 
-                <button
-                    onClick={onAnalyzePairs}
-                    disabled={loading}
-                    className="w-full md:w-auto px-6 py-2 md:py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[40px] md:min-h-[48px]"
-                >
-                    {loading ? (
-                        <>
-                            <LoadingSpinner size="w-5 h-5" />
-                            <span>Analyzing...</span>
-                        </>
-                    ) : (
-                        <>
-                            <AnalyticsIcon className="w-5 h-5 hidden sm:block" />
-                            <span className="sm:hidden">📊 Analyze Pairs</span>
-                            <span className="hidden sm:inline">Analyze Pairs</span>
-                        </>
-                    )}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <button
+                        onClick={onAnalyzePairs}
+                        disabled={loading}
+                        className="w-full sm:w-auto px-6 py-2 md:py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[40px] md:min-h-[48px]"
+                    >
+                        {loading ? (
+                            <>
+                                <LoadingSpinner size="w-5 h-5" />
+                                <span>Analyzing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <AnalyticsIcon className="w-5 h-5 hidden sm:block" />
+                                <span className="sm:hidden">📊 Analyze</span>
+                                <span className="hidden sm:inline">Analyze Pairs</span>
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        onClick={onDownloadData}
+                        disabled={!data || loading}
+                        className="w-full sm:w-auto px-6 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[40px] md:min-h-[48px]"
+                    >
+                        <DownloadIcon className="w-5 h-5 hidden sm:block" />
+                        <span className="sm:hidden">⬇️ Download</span>
+                        <span className="hidden sm:inline">Download Data</span>
+                    </button>
+                </div>
 
                 {data && (
                     <div className="text-sm text-gray-400 text-center md:text-left">

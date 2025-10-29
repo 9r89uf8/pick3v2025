@@ -1,5 +1,7 @@
 // app/services/pairAnalysisService.js - Service layer for pair analysis functionality
 
+import { ALL_TARGET_PAIRS, TARGET_PAIRS_BY_POSITION } from '@/app/constants/targetPairs';
+
 /**
  * Fetch pair analysis data from API
  * @param {string} month - Month to analyze (e.g., 'Sep', 'Aug')
@@ -41,27 +43,13 @@ export const fetchPairAnalysis = async (month = null, year = null) => {
  * @param {Array} targetPairs - Array of target pair strings to track (not used anymore)
  * @returns {Object} Formatted chart data for target pairs
  */
-export const formatPairDataForChart = (data, targetPairs = []) => {
+export const formatPairDataForChart = (data) => {
     if (!data.success || !data.data) {
         return { chartData: [], colorMap: {} };
     }
 
     const { timeline, categories } = data.data;
-    
-    // Define target pairs by their specific positions
-    const TARGET_PAIRS_BY_POSITION = {
-        '1st & 2nd': ['0-1', '0-2', '1-2', '3-4', '1-4'],
-        '1st & 3rd': ['1-8', '1-9', '0-9', '0-7', '0-8'],
-        '2nd & 3rd': ['7-8', '8-9', '6-7', '5-7', '5-8']
-    };
-    
-    // Flatten all target pairs for stats initialization
-    const allTargetPairs = [
-        ...TARGET_PAIRS_BY_POSITION['1st & 2nd'],
-        ...TARGET_PAIRS_BY_POSITION['1st & 3rd'],
-        ...TARGET_PAIRS_BY_POSITION['2nd & 3rd']
-    ];
-    
+
     // Create color mapping for positions
     const colorMap = {
         '1st & 2nd': '#ff4444', // Red
@@ -74,7 +62,7 @@ export const formatPairDataForChart = (data, targetPairs = []) => {
     const targetPairStats = {};
     
     // Initialize stats for each target pair
-    allTargetPairs.forEach(pair => {
+    ALL_TARGET_PAIRS.forEach(pair => {
         targetPairStats[pair] = {
             count: 0,
             positions: [],
@@ -119,7 +107,7 @@ export const formatPairDataForChart = (data, targetPairs = []) => {
     });
     
     // Create line chart data for each target pair
-    const chartData = allTargetPairs.map(pair => {
+    const chartData = ALL_TARGET_PAIRS.map(pair => {
         return {
             pair,
             data: targetPairStats[pair].draws.map(draw => ({

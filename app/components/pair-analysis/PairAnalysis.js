@@ -66,6 +66,7 @@ const PairAnalysis = () => {
         }
     };
 
+    console.log(data)
     useEffect(() => {
         analyzePairs();
         // Initialize with current month
@@ -192,6 +193,27 @@ const PairAnalysis = () => {
         setExpandedRows(newExpanded);
     };
 
+    const handleDownloadData = () => {
+        if (!data) {
+            return;
+        }
+
+        const timestamp = new Date().toISOString().split('T')[0];
+        const filename = `pair-analysis-${pairType}-${timestamp}.json`;
+        const fileContents = JSON.stringify(data, null, 2);
+        const blob = new Blob([fileContents], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="py-1 md:py-6">
             <MonthlyPairTracking
@@ -217,6 +239,7 @@ const PairAnalysis = () => {
                 onPairTypeChange={setPairType}
                 onAnalyzePairs={analyzePairs}
                 onClearSuccessMessage={() => setSuccessMessage('')}
+                onDownloadData={handleDownloadData}
             />
 
             <PairAnalysisSummary data={data} />

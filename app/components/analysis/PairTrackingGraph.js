@@ -11,6 +11,7 @@ import {
     CartesianGrid,
     Tooltip,
 } from 'recharts';
+import { ALL_TARGET_PAIRS, TARGET_PAIRS_BY_POSITION } from '@/app/constants/targetPairs';
 import {
     fetchPairAnalysis,
     formatPairDataForChart,
@@ -60,6 +61,17 @@ const TimelineIcon = () => (
     </svg>
 );
 
+const ChevronIcon = ({ open = false }) => (
+    <svg
+        className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 9l6 6 6-6" />
+    </svg>
+);
+
 const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
@@ -69,20 +81,7 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
     const [colorMap, setColorMap] = useState({});
     const [error, setError] = useState(null);
     const [totalHits, setTotalHits] = useState(0);
-
-    // Target pairs to track exclusively
-    const TARGET_PAIRS = {
-        '1st & 2nd': ['0-1', '0-2', '1-2', '3-4', '1-4'],
-        '1st & 3rd': ['1-8', '1-9', '0-9', '0-7', '0-8'],
-        '2nd & 3rd': ['7-8', '8-9', '6-7', '5-7', '5-8']
-    };
-
-    // Flatten all target pairs for easy checking
-    const ALL_TARGET_PAIRS = [
-        ...TARGET_PAIRS['1st & 2nd'],
-        ...TARGET_PAIRS['1st & 3rd'],
-        ...TARGET_PAIRS['2nd & 3rd']
-    ];
+    const [expandedPairs, setExpandedPairs] = useState({});
 
     useEffect(() => {
         loadPairAnalysis();
@@ -98,12 +97,13 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
             if (result.success) {
                 setData(result.data);
 
-                const formatted = formatPairDataForChart(result, ALL_TARGET_PAIRS);
+                const formatted = formatPairDataForChart(result);
                 setChartData(formatted.chartData);
                 setTargetPairStats(formatted.targetPairStats);
                 setTargetPairTimeline(formatted.targetPairTimeline);
                 setColorMap(formatted.colorMap);
                 setTotalHits(formatted.totalTargetPairHits);
+                setExpandedPairs({});
             } else {
                 setError(result.error || 'Failed to load pair analysis');
             }
@@ -122,8 +122,8 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
         csvContent += 'Pair,Position,Count,Draws\n';
 
         Object.entries(targetPairStats).forEach(([pair, stats]) => {
-            const position = TARGET_PAIRS['1st & 2nd'].includes(pair) ? '1st & 2nd' :
-                            TARGET_PAIRS['1st & 3rd'].includes(pair) ? '1st & 3rd' : '2nd & 3rd';
+            const position = TARGET_PAIRS_BY_POSITION['1st & 2nd'].includes(pair) ? '1st & 2nd' :
+                            TARGET_PAIRS_BY_POSITION['1st & 3rd'].includes(pair) ? '1st & 3rd' : '2nd & 3rd';
             const drawNumbers = stats.draws.map(d => d.drawIndex).join(';');
             csvContent += `${pair},${position},${stats.count},"${drawNumbers}"\n`;
         });
@@ -151,7 +151,7 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
         };
 
         // Calculate totals for each section
-        Object.entries(TARGET_PAIRS).forEach(([position, pairs]) => {
+        Object.entries(TARGET_PAIRS_BY_POSITION).forEach(([position, pairs]) => {
             pairs.forEach(pair => {
                 const stats = targetPairStats[pair];
                 if (stats) {
@@ -172,7 +172,7 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
 
         // Bar chart data - individual pairs
         const barData = [];
-        Object.entries(TARGET_PAIRS).forEach(([position, pairs]) => {
+        Object.entries(TARGET_PAIRS_BY_POSITION).forEach(([position, pairs]) => {
             pairs.forEach(pair => {
                 const stats = targetPairStats[pair];
                 barData.push({
@@ -185,6 +185,13 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
         });
 
         return { pieData, barData, sectionTotals, grandTotal };
+    };
+
+    const handleTogglePair = (pair) => {
+        setExpandedPairs((prev) => ({
+            ...prev,
+            [pair]: !prev[pair]
+        }));
     };
 
     if (loading) {
@@ -473,7 +480,7 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
                     </p>
                 </div>
                 <div className="space-y-5">
-                    {Object.entries(TARGET_PAIRS).map(([position, pairs]) => (
+                    {Object.entries(TARGET_PAIRS_BY_POSITION).map(([position, pairs]) => (
                         <div
                             key={position}
                             className="rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_25px_60px_-35px_rgba(15,23,42,0.95)]"
@@ -494,18 +501,39 @@ const PairTrackingGraph = ({ selectedMonth = null, selectedYear = null }) => {
                                 {pairs.map((pair) => {
                                     const stats = targetPairStats[pair];
                                     const count = stats?.count || 0;
+                                    const isExpanded = !!expandedPairs[pair];
+                                    const hasDraws = Boolean(stats?.draws?.length);
                                     return (
-                                        <span
-                                            key={pair}
-                                            className={`inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs text-white transition ${
-                                                count > 0 ? 'font-semibold shadow-[0_18px_40px_-28px_rgba(15,23,42,1)]' : 'opacity-70'
-                                            }`}
-                                            style={{
-                                                backgroundColor: count > 0 ? colorMap[position] : 'rgba(128, 128, 128, 0.3)'
-                                            }}
-                                        >
-                                            {pair} ({count}x)
-                                        </span>
+                                        <div key={pair} className="flex min-w-[160px] flex-col rounded-2xl border border-white/5 bg-slate-950/40 px-2 py-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => hasDraws && handleTogglePair(pair)}
+                                                className={`inline-flex w-full items-center justify-between gap-2 rounded-full border border-white/15 px-3 py-1 text-xs text-white transition ${
+                                                    count > 0 ? 'font-semibold shadow-[0_18px_40px_-28px_rgba(15,23,42,1)]' : 'opacity-70'
+                                                } ${hasDraws ? 'cursor-pointer hover:-translate-y-0.5 hover:border-white/30' : 'cursor-default'}`}
+                                                style={{
+                                                    backgroundColor: count > 0 ? colorMap[position] : 'rgba(128, 128, 128, 0.3)'
+                                                }}
+                                            >
+                                                <span>{pair} ({count}x)</span>
+                                                {hasDraws && <ChevronIcon open={isExpanded} />}
+                                            </button>
+                                            {isExpanded && hasDraws && (
+                                                <ul className="mt-2 space-y-1 text-[0.7rem] text-slate-200/90">
+                                                    {stats.draws.map((draw, index) => (
+                                                        <li
+                                                            key={`${pair}-${draw.drawIndex}-${index}`}
+                                                            className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-white/5 px-2 py-1"
+                                                        >
+                                                            <span className="font-semibold text-white">{draw.numbers.join('-')}</span>
+                                                            <span className="text-[0.6rem] text-slate-300">
+                                                                Draw {draw.drawIndex}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
                                     );
                                 })}
                             </div>
