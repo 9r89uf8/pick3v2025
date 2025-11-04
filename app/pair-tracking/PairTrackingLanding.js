@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import PairTrackingGraph from '@/app/components/analysis/PairTrackingGraph';
 import PairAnalysis from '@/app/components/pair-analysis/PairAnalysis';
 import DrawsList from '@/app/components/shared/DrawsList';
-import { fetchPosts } from '@/app/services/postService';
+import { createAllPosts, createPost, deleteAllFromCurrentMonth, fetchPosts } from '@/app/services/postService';
 import { useStore } from '@/app/store/store';
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -46,6 +46,10 @@ const PairTrackingLanding = () => {
     const [showDraws, setShowDraws] = useState(false);
     const [drawsLoading, setDrawsLoading] = useState(false);
     const [hasLoadedDraws, setHasLoadedDraws] = useState(false);
+    const [actionStatus, setActionStatus] = useState(null);
+    const [isCreatingLatest, setIsCreatingLatest] = useState(false);
+    const [isSyncingMonth, setIsSyncingMonth] = useState(false);
+    const [isClearingMonth, setIsClearingMonth] = useState(false);
 
     const handleCurrentMonth = () => {
         setSelectedMonth(currentMonth);
@@ -53,6 +57,7 @@ const PairTrackingLanding = () => {
     };
 
     const isViewingCurrent = selectedMonth === currentMonth && selectedYear === currentYear;
+    const isActionInFlight = drawsLoading || isCreatingLatest || isSyncingMonth || isClearingMonth;
 
     useEffect(() => {
         if (posts && posts.length > 0) {
@@ -62,6 +67,20 @@ const PairTrackingLanding = () => {
 
     const handleTogglePairAnalysis = () => {
         setShowPairAnalysis((prev) => !prev);
+    };
+
+    const loadDraws = async () => {
+        setDrawsLoading(true);
+
+        try {
+            await fetchPosts();
+            setHasLoadedDraws(true);
+        } catch (error) {
+            console.error('Error loading draws:', error);
+            throw error;
+        } finally {
+            setDrawsLoading(false);
+        }
     };
 
     const handleToggleDraws = async () => {
@@ -76,15 +95,82 @@ const PairTrackingLanding = () => {
             return;
         }
 
-        setDrawsLoading(true);
+        try {
+            await loadDraws();
+        } catch (error) {
+            setActionStatus({
+                type: 'error',
+                message: 'Unable to load draws. Please try again.',
+            });
+        }
+    };
+
+    const handlePullLatestDraw = async () => {
+        setActionStatus(null);
+        setIsCreatingLatest(true);
 
         try {
-            await fetchPosts();
-            setHasLoadedDraws(true);
+            await createPost();
+            setShowDraws(true);
+            await loadDraws();
+            setActionStatus({
+                type: 'success',
+                message: 'Latest draw saved to Firebase.',
+            });
         } catch (error) {
-            console.error('Error loading draws:', error);
+            console.error('Error pulling latest draw:', error);
+            setActionStatus({
+                type: 'error',
+                message: 'Unable to pull the latest draw. Please retry.',
+            });
         } finally {
-            setDrawsLoading(false);
+            setIsCreatingLatest(false);
+        }
+    };
+
+    const handlePullCurrentMonthDraws = async () => {
+        setActionStatus(null);
+        setIsSyncingMonth(true);
+
+        try {
+            await createAllPosts();
+            setShowDraws(true);
+            await loadDraws();
+            setActionStatus({
+                type: 'success',
+                message: 'Monthly draws refreshed from the source.',
+            });
+        } catch (error) {
+            console.error('Error pulling monthly draws:', error);
+            setActionStatus({
+                type: 'error',
+                message: 'Unable to refresh monthly draws. Please retry.',
+            });
+        } finally {
+            setIsSyncingMonth(false);
+        }
+    };
+
+    const handleDeleteCurrentMonthDraws = async () => {
+        setActionStatus(null);
+        setIsClearingMonth(true);
+
+        try {
+            await deleteAllFromCurrentMonth();
+            setShowDraws(true);
+            await loadDraws();
+            setActionStatus({
+                type: 'success',
+                message: 'Current month draws cleared from Firebase.',
+            });
+        } catch (error) {
+            console.error('Error clearing current month draws:', error);
+            setActionStatus({
+                type: 'error',
+                message: 'Unable to clear current month draws. Please retry.',
+            });
+        } finally {
+            setIsClearingMonth(false);
         }
     };
 
@@ -209,13 +295,51 @@ const PairTrackingLanding = () => {
                                     Keep the latest draw history handy for context while you explore trends and combinations.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                className={toggleButtonClasses}
-                                onClick={handleToggleDraws}
-                            >
-                                {showDraws ? 'Hide Draws' : 'Show Draws'}
-                            </button>
+                            <div className="flex flex-col items-stretch gap-3 md:items-end">
+                                <div className="flex flex-wrap gap-2 md:justify-end">
+                                    <button
+                                        type="button"
+                                        className={`${toggleButtonClasses} whitespace-nowrap`}
+                                        onClick={handleToggleDraws}
+                                        disabled={!showDraws && isActionInFlight}
+                                    >
+                                        {showDraws ? 'Hide Draws' : 'Show Draws'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${toggleButtonClasses} whitespace-nowrap`}
+                                        onClick={handlePullLatestDraw}
+                                        disabled={isActionInFlight}
+                                    >
+                                        {isCreatingLatest ? 'Pulling Latest...' : 'Pull Latest Draw'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${toggleButtonClasses} whitespace-nowrap`}
+                                        onClick={handlePullCurrentMonthDraws}
+                                        disabled={isActionInFlight}
+                                    >
+                                        {isSyncingMonth ? 'Syncing Month...' : 'Sync Month Draws'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/50 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition hover:-translate-y-0.5 hover:border-rose-400/80 hover:bg-rose-500/20 hover:shadow-[0_18px_35px_-18px_rgba(248,113,113,0.6)] focus:outline-none focus:ring-2 focus:ring-rose-400/40 disabled:cursor-not-allowed disabled:border-white/5 disabled:bg-white/5 disabled:text-slate-300/40 disabled:shadow-none whitespace-nowrap"
+                                        onClick={handleDeleteCurrentMonthDraws}
+                                        disabled={isActionInFlight}
+                                    >
+                                        {isClearingMonth ? 'Clearing...' : 'Clear Current Month'}
+                                    </button>
+                                </div>
+                                {actionStatus ? (
+                                    <span
+                                        className={`text-xs font-medium ${
+                                            actionStatus.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                                        }`}
+                                    >
+                                        {actionStatus.message}
+                                    </span>
+                                ) : null}
+                            </div>
                         </div>
 
                         {showDraws ? (

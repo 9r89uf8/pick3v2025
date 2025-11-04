@@ -474,7 +474,7 @@ export async function GET(req) {
 
 
         // Process pages sequentially
-        for (let pageNum = 6; pageNum >= 1; pageNum--) {
+        for (let pageNum = 4; pageNum >= 1; pageNum--) {
             try {
                 console.log(`Starting to process page ${pageNum}`);
                 const result = await processPage(pageNum, currentMonth, previousPicks);
