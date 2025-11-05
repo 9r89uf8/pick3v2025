@@ -1,29 +1,13 @@
 {
   "crons": [
-    {
-      "path": "/api/posts/create",
-      "schedule": "16 18 * * *"
-    },
-    {
-      "path": "/api/display/combo/create",
-      "schedule": "20 18 * * *"
-    },
-    {
-      "path": "/api/display/straight/create",
-      "schedule": "20 18 * * *"
-    },
-    {
-      "path": "/api/posts/create",
-      "schedule": "16 4 * * *"
-    },
-    {
-      "path": "/api/display/combo/create",
-      "schedule": "20 4 * * *"
-    },
-    {
-      "path": "/api/display/straight/create",
-      "schedule": "20 4 * * *"
-    }
+    { "path": "/api/posts/create",              "schedule": "15 19 * * *" },
+    { "path": "/api/display/combo/create",      "schedule": "20 19 * * *" },
+    { "path": "/api/display/straight/create",   "schedule": "20 19 * * *" },
+
+    { "path": "/api/posts/create",              "schedule": "15 5 * * *" },
+    { "path": "/api/display/combo/create",      "schedule": "20 5 * * *" },
+    { "path": "/api/display/straight/create",   "schedule": "20 5 * * *" }
   ]
 }
+
 
