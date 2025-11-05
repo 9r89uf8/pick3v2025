@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/posts/create",
-      "schedule": "15 18 * * *"
+      "schedule": "16 18 * * *"
     },
     {
       "path": "/api/display/combo/create",
@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/posts/create",
-      "schedule": "15 4 * * *"
+      "schedule": "16 4 * * *"
     },
     {
       "path": "/api/display/combo/create",
